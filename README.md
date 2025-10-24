@@ -344,7 +344,7 @@ HITL/SITL architectures
 - https://ardupilot.org/dev/docs/sitl-simulator-software-in-the-loop.html#sitl-architecture
 
 - Add LiDAR driver https://github.com/Livox-SDK/livox_ros_driver2
-    the LiDAR should publish on topic `/lidar_points` for KISS-ICP
+  the LiDAR should publish on topic `/lidar_points` for KISS-ICP
 
 ## Future Work / Ideas for Contributions
 
