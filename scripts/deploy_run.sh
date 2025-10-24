@@ -62,6 +62,8 @@ docker run $DOCKER_RUN_FLAGS \
   --runtime nvidia \
   --volume /tmp/.X11-unix:/tmp/.X11-unix:rw --device /dev/dri --gpus all \
   --volume /tmp/argus_socket:/tmp/argus_socket \
+  --volume ~/tensorrt_cache/:/tensorrt_cache \
+  --device=/dev/ttyTHS1:/dev/ttyTHS1 \
   --env DISPLAY=$DISPLAY --env QT_X11_NO_MITSHM=1 --env NVIDIA_DRIVER_CAPABILITIES=all --env XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR \
   --env ROS_DOMAIN_ID=$DRONE_ID --env AUTOPILOT=$AUTOPILOT --env DRONE_TYPE=$DRONE_TYPE \
   --env DRONE_ID=$DRONE_ID --env HEADLESS=$HEADLESS --env CAMERA=$CAMERA --env LIDAR=$LIDAR --env GST_DEBUG=3 \
@@ -70,7 +72,6 @@ docker run $DOCKER_RUN_FLAGS \
   --net=host \
   --privileged \
   --name aircraft-container_$DRONE_ID \
-  -v ~/tensorrt_cache/:/tensorrt_cache \
   ${MODE_OPTS} \
   aircraft-image
 
