@@ -337,8 +337,6 @@ Once done, detach Tmux (and remove the containers) with `Ctrl + b`, then `d`
 
 ## TODOs
 
-# Dual-network SITL and HITL
-
 [Gymnasium](https://github.com/Farama-Foundation/Gymnasium) RL interface
 
 HITL/SITL architectures
