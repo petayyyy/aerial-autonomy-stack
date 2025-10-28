@@ -18,7 +18,6 @@ windows:
       panes:
         - clear && echo "So nice to have you with us, this is the simulation container."
 
-  <% if autopilot == 'px4' %>
   - gz_sim:
       layout: main-vertical
       panes:
@@ -29,37 +28,25 @@ windows:
           <% if lidar == 'false' %>
           sed -i '/<sensor/,/<\/sensor>/d'  /aas/simulation_resources/aircraft_models/sensor_lidar/model.sdf &&
           <% end %>
+          <% if autopilot == 'px4' %>
           GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:/aas/simulation_resources/aircraft_models:/aas/simulation_resources/simulation_worlds 
           GZ_SIM_PHYSICS_ENGINE_PATH=$GZ_SIM_PHYSICS_ENGINE_PATH:/usr/lib/x86_64-linux-gnu/gz-physics-7/engine-plugins/
           gz sim -v4 -r <% if headless == 'true' %> -s <% end %> <%= world %>.sdf
-  <% elsif autopilot == 'ardupilot' %>
-  - gz_sim:
-      layout: main-vertical
-      panes:
-        - > 
-          <% if camera == 'false' %>
-          sed -i '/<sensor/,/<\/sensor>/d' /aas/simulation_resources/aircraft_models/sensor_camera/model.sdf &&
-          <% end %>
-          <% if lidar == 'false' %>
-          sed -i '/<sensor/,/<\/sensor>/d'  /aas/simulation_resources/aircraft_models/sensor_lidar/model.sdf &&
-          <% end %>
+          <% elsif autopilot == 'ardupilot' %>
           /aas/simulation_resources/aircraft_models/_create_ardupilot_models.sh <%= num_quads %> <%= num_vtols %>  &&
           /aas/simulation_resources/simulation_worlds/_create_ardupilot_world.sh <%= num_quads %> <%= num_vtols %> /aas/simulation_resources/simulation_worlds/<%= world %>.sdf &&
           GZ_SIM_SYSTEM_PLUGIN_PATH=/aas/github_apps/ardupilot_gazebo/build:$GZ_SIM_SYSTEM_PLUGIN_PATH 
           GZ_SIM_RESOURCE_PATH=/aas/simulation_resources/aircraft_models:/aas/simulation_resources/simulation_worlds:$GZ_SIM_RESOURCE_PATH 
           GZ_SIM_PHYSICS_ENGINE_PATH=$GZ_SIM_PHYSICS_ENGINE_PATH:/usr/lib/x86_64-linux-gnu/gz-physics-7/engine-plugins/
           gz sim -v4 -r <% if headless == 'true' %> -s <% end %> populated_ardupilot.sdf
-  <% end %>
+          <% end %>
         - >
           (
             PRIMARY_RES=$(xrandr | grep -oE '[0-9]+x[0-9]+' | head -1)
-            SCREEN_W=$(echo $PRIMARY_RES | cut -d'x' -f1)
-            SCREEN_H=$(echo $PRIMARY_RES | cut -d'x' -f2)
+            SCREEN_W=$(echo $PRIMARY_RES | cut -d'x' -f1); SCREEN_H=$(echo $PRIMARY_RES | cut -d'x' -f2)
             SCREEN_SCALE=$((SCREEN_H * 100 / 1080)) # Full HD = 100%
-            WIN_W=$(( 800 * SCREEN_SCALE / 100 ))
-            WIN_H=$(( 600 * SCREEN_SCALE / 100 ))
-            POS_X=$((SCREEN_W - WIN_W))
-            POS_Y=$(( 0 ))
+            WIN_W=$(( 800 * SCREEN_SCALE / 100 )); WIN_H=$(( 600 * SCREEN_SCALE / 100 ))
+            POS_X=$((SCREEN_W - WIN_W)); POS_Y=$(( 0 ))
             for i in {1..10}; do 
               sleep 2
               if wmctrl -l | grep -q "Gazebo Sim"; then
@@ -82,6 +69,7 @@ windows:
       model_name = is_quad ? "x500_#{sitl_instance}" : "standard_vtol_#{sitl_instance}"
       x_offset = drone[:index] * 2
       y_offset = is_quad ? x_offset : x_offset + 2
+      sensor_path = ''
     elsif autopilot == 'ardupilot'
       vehicle_config = is_quad ? '-v ArduCopter -f gazebo-iris' : '-v ArduPlane'
       model_name = is_quad ? "iris_with_ardupilot_#{drone_id}" : "alti_transition_quad_#{drone_id}"
@@ -95,53 +83,40 @@ windows:
         - >
           sleep <%= (drone_id) * 3 %> &&
           PX4_GZ_MODEL_POSE="<%= x_offset %>,<%= y_offset %>,0.5,0,0,0"
-          PX4_SYS_AUTOSTART=<%= autostart %>
-          ROS_DOMAIN_ID=<%= drone_id %>
+          PX4_SYS_AUTOSTART=<%= autostart %> ROS_DOMAIN_ID=<%= drone_id %>
           PX4_UXRCE_DDS_NS="Drone<%= drone_id %>" PX4_UXRCE_DDS_AG_IP="<%= subnet_prefix %>.1.<%= drone_id %>" PX4_UXRCE_DDS_PORT=8888
           /aas/github_apps/PX4-Autopilot/build/px4_sitl_default/bin/px4 -i <%= sitl_instance %>
-        - "ROS_DOMAIN_ID=<%= drone_id %> ros2 run ros_gz_bridge parameter_bridge /clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"
-        <% if lidar == 'true' %>
-        - "ROS_DOMAIN_ID=<%= drone_id %> ros2 run ros_gz_bridge parameter_bridge /world/<%= world %>/model/<%= model_name %>/model/simple_lidar/link/lidar/base_link/sensor/lidar3d/scan/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked --ros-args -r /world/<%= world %>/model/<%= model_name %>/model/simple_lidar/link/lidar/base_link/sensor/lidar3d/scan/points:=/lidar_points"
-        <% end %>
-        <% if camera == 'true' %>
-        - >
-          sleep <%= (drone_id) * 3 %> &&
-          python3 /aas/simulation_resources/comms/gz_to_gst_image_bridge.py 
-          --gz_topic /world/<%= world %>/model/<%= model_name %>/model/simple_camera/link/mono_cam/base_link/sensor/imager/image
-          --ip <%= subnet_prefix %>.1.<%= drone_id %> --port 5600
-        <% end %>
   <% elsif autopilot == 'ardupilot' %>
   - ardupilot_sitl_<%= drone_id %>:
       layout: main-horizontal
       panes:
         - >
-          sleep <%= (drone_id) * 3 %> &&
-          mkdir -p /aas/ardu_sitl_<%= drone_id %> && cd /aas/ardu_sitl_<%= drone_id %> &&
+          sleep <%= (drone_id) * 5 %> && mkdir -p /aas/ardu_sitl_<%= drone_id %> && cd /aas/ardu_sitl_<%= drone_id %> &&
           /aas/github_apps/ardupilot/Tools/autotest/sim_vehicle.py 
           <%= vehicle_config %> --model JSON
           -I <%= sitl_instance %> --sysid <%= drone_id %>
           --add-param-file=/aas/simulation_resources/aircraft_models/<%= model_name %>/ardupilot-4.6.params
           -l $(awk -F "[><]" "/<spherical_coordinates>/,/<\/spherical_coordinates>/" /aas/simulation_resources/simulation_worlds/<%= world %>.sdf | awk -F "[><]" "/latitude_deg/ {print \$3}"),$(awk -F "[><]" "/<spherical_coordinates>/,/<\/spherical_coordinates>/" /aas/simulation_resources/simulation_worlds/<%= world %>.sdf | awk -F "[><]" "/longitude_deg/ {print \$3}"),$(awk -F "[><]" "/<spherical_coordinates>/,/<\/spherical_coordinates>/" /aas/simulation_resources/simulation_worlds/<%= world %>.sdf | awk -F "[><]" "/elevation/ {print \$3}"),0          
-          --out=udp:127.0.0.1:<%= 21550 + sitl_instance %>
           --out=udp:<%= subnet_prefix %>.1.<%= drone_id %>:<%= 22530 + sitl_instance %>
-        - mavproxy.py --state-basedir=/aas/ardu_sitl_<%= drone_id %>/mavproxy --master=udp:127.0.0.1:<%= 21550 + sitl_instance %> --out=udp:127.0.0.1:<%= 14550 + sitl_instance %> --out=udp:127.0.0.1:<%= 14540 + sitl_instance %>
+          --out=udp:127.0.0.1:<%= 21550 + sitl_instance %>
+        - >
+          mavproxy.py --state-basedir=/aas/ardu_sitl_<%= drone_id %>/mavproxy --master=udp:127.0.0.1:<%= 21550 + sitl_instance %> 
+          --out=udp:127.0.0.1:<%= 14550 + sitl_instance %> --out=udp:127.0.0.1:<%= 14540 + sitl_instance %>
+        <% if is_quad %>
+        - sleep <%= (drone_id) * 5 + 35 %> && tmux send-keys -t 'sim:ardupilot_sitl_<%= drone_id %>.0' 'rc 3 1500' C-m
+        <% end %>
+  <% end %>
         - "ROS_DOMAIN_ID=<%= drone_id %> ros2 run ros_gz_bridge parameter_bridge /clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"
         <% if lidar == 'true' %>
         - "ROS_DOMAIN_ID=<%= drone_id %> ros2 run ros_gz_bridge parameter_bridge /world/<%= world %>/model/<%= model_name %>/<%= sensor_path %>model/simple_lidar/link/lidar/base_link/sensor/lidar3d/scan/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked --ros-args -r /world/<%= world %>/model/<%= model_name %>/<%= sensor_path %>model/simple_lidar/link/lidar/base_link/sensor/lidar3d/scan/points:=/lidar_points"
         <% end %>
         <% if camera == 'true' %>
         - >
-          sleep <%= (drone_id) * 3 %> &&
+          sleep <%= (drone_id) * 3 %> && 
           python3 /aas/simulation_resources/comms/gz_to_gst_image_bridge.py 
           --gz_topic /world/<%= world %>/model/<%= model_name %>/<%= sensor_path %>model/simple_camera/link/mono_cam/base_link/sensor/imager/image
           --ip <%= subnet_prefix %>.1.<%= drone_id %> --port 5600
         <% end %>
-        <% if is_quad %>
-        - >
-          sleep <%= (drone_id) * 3 + 35 %> &&
-          tmux send-keys -t 'sim:ardupilot_sitl_<%= drone_id %>.0' 'rc 3 1500' C-m
-        <% end %>
-  <% end %>
   <% end %>
 
   - ground_system_over_zenoh:
@@ -164,13 +139,10 @@ windows:
           gosu qgcuser /squashfs-root/AppRun &
           (
             PRIMARY_RES=$(xrandr | grep -oE '[0-9]+x[0-9]+' | head -1)
-            SCREEN_W=$(echo $PRIMARY_RES | cut -d'x' -f1)
-            SCREEN_H=$(echo $PRIMARY_RES | cut -d'x' -f2)
+            SCREEN_W=$(echo $PRIMARY_RES | cut -d'x' -f1); SCREEN_H=$(echo $PRIMARY_RES | cut -d'x' -f2)
             SCREEN_SCALE=$((SCREEN_H * 100 / 1080)) # Full HD = 100%
-            WIN_W=$(( 800 * SCREEN_SCALE / 100 ))
-            WIN_H=$(( 600 * SCREEN_SCALE / 100 ))
-            POS_X=$((SCREEN_W - WIN_W))
-            POS_Y=$((WIN_H))
+            WIN_W=$(( 800 * SCREEN_SCALE / 100 )); WIN_H=$(( 600 * SCREEN_SCALE / 100 ))
+            POS_X=$((SCREEN_W - WIN_W)); POS_Y=$((WIN_H))
             for i in {1..10}; do 
               sleep 2
               if wmctrl -l | grep -q "QGroundControl"; then
