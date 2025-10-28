@@ -73,76 +73,73 @@ windows:
     num_quads.times { |i| drones << { type: 'quad', index: i } }
     num_vtols.times { |i| drones << { type: 'vtol', index: i } }
   %>
-  <% drones.each_with_index do |drone, drone_id| %>
+  <% drones.each_with_index do |drone, sitl_instance| %>
   <% 
+    drone_id = sitl_instance + 1
     is_quad = drone[:type] == 'quad'
     if autopilot == 'px4'
       autostart = is_quad ? 5140 : 5141
-      model_name = is_quad ? "x500_#{drone_id}" : "standard_vtol_#{drone_id}"
+      model_name = is_quad ? "x500_#{sitl_instance}" : "standard_vtol_#{sitl_instance}"
       x_offset = drone[:index] * 2
       y_offset = is_quad ? x_offset : x_offset + 2
     elsif autopilot == 'ardupilot'
       vehicle_config = is_quad ? '-v ArduCopter -f gazebo-iris' : '-v ArduPlane'
-      model_name = is_quad ? "iris_with_ardupilot_#{drone_id + 1}" : "alti_transition_quad_#{drone_id + 1}"
+      model_name = is_quad ? "iris_with_ardupilot_#{drone_id}" : "alti_transition_quad_#{drone_id}"
       sensor_path = is_quad ? 'model/iris/' : ''
     end
   %>
   <% if autopilot == 'px4' %>
-  - px4_sitl_<%= drone_id + 1 %>:
+  - px4_sitl_<%= drone_id %>:
       layout: main-horizontal
       panes:
         - >
-          sleep <%= (drone_id + 1) * 3 %> &&
+          sleep <%= (drone_id) * 3 %> &&
           PX4_GZ_MODEL_POSE="<%= x_offset %>,<%= y_offset %>,0.5,0,0,0"
           PX4_SYS_AUTOSTART=<%= autostart %>
-          ROS_DOMAIN_ID=<%= drone_id + 1 %>
-          PX4_UXRCE_DDS_NS="Drone<%= drone_id + 1 %>"
-          PX4_UXRCE_DDS_AG_IP="<%= subnet_prefix %>.1.<%= drone_id + 1 %>"
-          PX4_UXRCE_DDS_PORT=8888
-          /aas/github_apps/PX4-Autopilot/build/px4_sitl_default/bin/px4 -i <%= drone_id %>
-        - "ROS_DOMAIN_ID=<%= drone_id + 1 %> ros2 run ros_gz_bridge parameter_bridge /clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"
+          ROS_DOMAIN_ID=<%= drone_id %>
+          PX4_UXRCE_DDS_NS="Drone<%= drone_id %>" PX4_UXRCE_DDS_AG_IP="<%= subnet_prefix %>.1.<%= drone_id %>" PX4_UXRCE_DDS_PORT=8888
+          /aas/github_apps/PX4-Autopilot/build/px4_sitl_default/bin/px4 -i <%= sitl_instance %>
+        - "ROS_DOMAIN_ID=<%= drone_id %> ros2 run ros_gz_bridge parameter_bridge /clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"
         <% if lidar == 'true' %>
-        - "ROS_DOMAIN_ID=<%= drone_id + 1 %> ros2 run ros_gz_bridge parameter_bridge /world/<%= world %>/model/<%= model_name %>/model/simple_lidar/link/lidar/base_link/sensor/lidar3d/scan/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked --ros-args -r /world/<%= world %>/model/<%= model_name %>/model/simple_lidar/link/lidar/base_link/sensor/lidar3d/scan/points:=/lidar_points"
+        - "ROS_DOMAIN_ID=<%= drone_id %> ros2 run ros_gz_bridge parameter_bridge /world/<%= world %>/model/<%= model_name %>/model/simple_lidar/link/lidar/base_link/sensor/lidar3d/scan/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked --ros-args -r /world/<%= world %>/model/<%= model_name %>/model/simple_lidar/link/lidar/base_link/sensor/lidar3d/scan/points:=/lidar_points"
         <% end %>
         <% if camera == 'true' %>
         - >
-          sleep <%= (drone_id + 1) * 3 %> &&
+          sleep <%= (drone_id) * 3 %> &&
           python3 /aas/simulation_resources/comms/gz_to_gst_image_bridge.py 
           --gz_topic /world/<%= world %>/model/<%= model_name %>/model/simple_camera/link/mono_cam/base_link/sensor/imager/image
-          --ip <%= subnet_prefix %>.1.<%= drone_id + 1 %> --port 5600
+          --ip <%= subnet_prefix %>.1.<%= drone_id %> --port 5600
         <% end %>
   <% elsif autopilot == 'ardupilot' %>
-  - ardupilot_sitl_<%= drone_id + 1 %>:
+  - ardupilot_sitl_<%= drone_id %>:
       layout: main-horizontal
       panes:
         - >
-          sleep <%= (drone_id + 1) * 3 %> &&
-          mkdir -p /aas/ardu_sitl_<%= drone_id + 1 %> && cd /aas/ardu_sitl_<%= drone_id + 1 %> &&
+          sleep <%= (drone_id) * 3 %> &&
+          mkdir -p /aas/ardu_sitl_<%= drone_id %> && cd /aas/ardu_sitl_<%= drone_id %> &&
           /aas/github_apps/ardupilot/Tools/autotest/sim_vehicle.py 
-          <%= vehicle_config %>
-          --model JSON
-          -I <%= drone_id %>
-          --sysid <%= drone_id + 1 %>
-          -l $(awk -F "[><]" "/<spherical_coordinates>/,/<\/spherical_coordinates>/" /aas/simulation_resources/simulation_worlds/<%= world %>.sdf | awk -F "[><]" "/latitude_deg/ {print \$3}"),$(awk -F "[><]" "/<spherical_coordinates>/,/<\/spherical_coordinates>/" /aas/simulation_resources/simulation_worlds/<%= world %>.sdf | awk -F "[><]" "/longitude_deg/ {print \$3}"),$(awk -F "[><]" "/<spherical_coordinates>/,/<\/spherical_coordinates>/" /aas/simulation_resources/simulation_worlds/<%= world %>.sdf | awk -F "[><]" "/elevation/ {print \$3}"),0          
-          --out=udp:127.0.0.1:<%= 21550 + drone_id %>
-          --out=udp:<%= subnet_prefix %>.1.<%= drone_id + 1 %>:<%= 22530 + drone_id %>
+          <%= vehicle_config %> --model JSON
+          -I <%= sitl_instance %> --sysid <%= drone_id %>
           --add-param-file=/aas/simulation_resources/aircraft_models/<%= model_name %>/ardupilot-4.6.params
-        - "ROS_DOMAIN_ID=<%= drone_id + 1 %> ros2 run ros_gz_bridge parameter_bridge /clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"
-        - mavproxy.py --state-basedir=/aas/ardu_sitl_<%= drone_id + 1 %>/mavproxy --master=udp:127.0.0.1:<%= 21550 + drone_id %> --out=udp:127.0.0.1:<%= 14550 + drone_id %> --out=udp:127.0.0.1:<%= 14540 + drone_id %>
+          -l $(awk -F "[><]" "/<spherical_coordinates>/,/<\/spherical_coordinates>/" /aas/simulation_resources/simulation_worlds/<%= world %>.sdf | awk -F "[><]" "/latitude_deg/ {print \$3}"),$(awk -F "[><]" "/<spherical_coordinates>/,/<\/spherical_coordinates>/" /aas/simulation_resources/simulation_worlds/<%= world %>.sdf | awk -F "[><]" "/longitude_deg/ {print \$3}"),$(awk -F "[><]" "/<spherical_coordinates>/,/<\/spherical_coordinates>/" /aas/simulation_resources/simulation_worlds/<%= world %>.sdf | awk -F "[><]" "/elevation/ {print \$3}"),0          
+          --out=udp:127.0.0.1:<%= 21550 + sitl_instance %>
+          --out=udp:<%= subnet_prefix %>.1.<%= drone_id %>:<%= 22530 + sitl_instance %>
+        - mavproxy.py --state-basedir=/aas/ardu_sitl_<%= drone_id %>/mavproxy --master=udp:127.0.0.1:<%= 21550 + sitl_instance %> --out=udp:127.0.0.1:<%= 14550 + sitl_instance %> --out=udp:127.0.0.1:<%= 14540 + sitl_instance %>
+        - "ROS_DOMAIN_ID=<%= drone_id %> ros2 run ros_gz_bridge parameter_bridge /clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"
         <% if lidar == 'true' %>
-        - "ROS_DOMAIN_ID=<%= drone_id + 1 %> ros2 run ros_gz_bridge parameter_bridge /world/<%= world %>/model/<%= model_name %>/<%= sensor_path %>model/simple_lidar/link/lidar/base_link/sensor/lidar3d/scan/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked --ros-args -r /world/<%= world %>/model/<%= model_name %>/<%= sensor_path %>model/simple_lidar/link/lidar/base_link/sensor/lidar3d/scan/points:=/lidar_points"
+        - "ROS_DOMAIN_ID=<%= drone_id %> ros2 run ros_gz_bridge parameter_bridge /world/<%= world %>/model/<%= model_name %>/<%= sensor_path %>model/simple_lidar/link/lidar/base_link/sensor/lidar3d/scan/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked --ros-args -r /world/<%= world %>/model/<%= model_name %>/<%= sensor_path %>model/simple_lidar/link/lidar/base_link/sensor/lidar3d/scan/points:=/lidar_points"
         <% end %>
         <% if camera == 'true' %>
         - >
-          sleep <%= (drone_id + 1) * 3 %> &&
+          sleep <%= (drone_id) * 3 %> &&
           python3 /aas/simulation_resources/comms/gz_to_gst_image_bridge.py 
           --gz_topic /world/<%= world %>/model/<%= model_name %>/<%= sensor_path %>model/simple_camera/link/mono_cam/base_link/sensor/imager/image
-          --ip <%= subnet_prefix %>.1.<%= drone_id + 1 %> --port 5600
+          --ip <%= subnet_prefix %>.1.<%= drone_id %> --port 5600
         <% end %>
         <% if is_quad %>
         - >
-          sleep <%= (drone_id + 1) * 3 + 35 %> &&
-          tmux send-keys -t 'sim:ardupilot_sitl_<%= drone_id + 1 %>.0' 'rc 3 1500' C-m
+          sleep <%= (drone_id) * 3 + 35 %> &&
+          tmux send-keys -t 'sim:ardupilot_sitl_<%= drone_id %>.0' 'rc 3 1500' C-m
         <% end %>
   <% end %>
   <% end %>

@@ -126,9 +126,6 @@ XTERM_CONFIG_ARGS=(
     Ctrl Shift <Key>V: insert-selection(CLIPBOARD)'
 )
 
-# Initialize a counter for the drone IDs
-DRONE_ID=0 # 0: simulation, 1-N: drones
-
 # Launch the simulation container
 DOCKER_CMD="docker run -it --rm \
   --volume /tmp/.X11-unix:/tmp/.X11-unix:rw --device /dev/dri --gpus all \
@@ -151,18 +148,19 @@ if [[ "$DESK_ENV" == "wsl" ]]; then
   DOCKER_CMD="$DOCKER_CMD $WSL_OPTS"
 fi
 DOCKER_CMD="$DOCKER_CMD ${MODE_SIM_OPTS} simulation-image"
-calculate_terminal_position $DRONE_ID
+calculate_terminal_position 0
 xterm "${XTERM_CONFIG_ARGS[@]}" -title "Simulation" -fa Monospace -fs $FONT_SIZE -bg black -fg white -geometry "${TERM_COLS}x${TERM_ROWS}+${X_POS}+${Y_POS}" -hold -e bash -c "$DOCKER_CMD" &
 
 if [[ "$HITL" == "false" ]]; then
+  # Initialize a counter for the drone IDs
+  DRONE_ID=1 # 1, 2, .., N drones
+
   # Function to launch the aircraft containers
   launch_aircraft_containers() {
     local drone_type=$1
     local num_drones=$2
-    local type_label=$3
     
     for i in $(seq 1 $num_drones); do
-      DRONE_ID=$((DRONE_ID + 1))
       sleep 1.5 # Limit resource usage
       DOCKER_CMD="docker run -it --rm \
         --volume /tmp/.X11-unix:/tmp/.X11-unix:rw --device /dev/dri --gpus all \
@@ -181,13 +179,14 @@ if [[ "$HITL" == "false" ]]; then
       fi
       DOCKER_CMD="$DOCKER_CMD ${MODE_AIR_OPTS} aircraft-image"
       calculate_terminal_position $DRONE_ID
-      xterm "${XTERM_CONFIG_ARGS[@]}" -title "$type_label $DRONE_ID" -fa Monospace -fs $FONT_SIZE -bg black -fg white -geometry "${TERM_COLS}x${TERM_ROWS}+${X_POS}+${Y_POS}" -hold -e bash -c "$DOCKER_CMD" &
+      xterm "${XTERM_CONFIG_ARGS[@]}" -title "${drone_type^^} $DRONE_ID" -fa Monospace -fs $FONT_SIZE -bg black -fg white -geometry "${TERM_COLS}x${TERM_ROWS}+${X_POS}+${Y_POS}" -hold -e bash -c "$DOCKER_CMD" &
+      DRONE_ID=$((DRONE_ID + 1))
     done
   }
   # Launch the Quad containers
-  launch_aircraft_containers "quad" $NUM_QUADS "Quad"
+  launch_aircraft_containers "quad" $NUM_QUADS
   # Launch the VTOL containers
-  launch_aircraft_containers "vtol" $NUM_VTOLS "VTOL"
+  launch_aircraft_containers "vtol" $NUM_VTOLS
 fi
 
 echo "Fly, my pretties, fly!"
