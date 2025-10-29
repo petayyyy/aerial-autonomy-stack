@@ -94,10 +94,7 @@ windows:
           --add-param-file=/aas/simulation_resources/aircraft_models/<%= model_name %>/ardupilot-4.6.params
           -l $(awk -F "[><]" "/<spherical_coordinates>/,/<\/spherical_coordinates>/" /aas/simulation_resources/simulation_worlds/<%= world %>.sdf | awk -F "[><]" "/latitude_deg/ {print \$3}"),$(awk -F "[><]" "/<spherical_coordinates>/,/<\/spherical_coordinates>/" /aas/simulation_resources/simulation_worlds/<%= world %>.sdf | awk -F "[><]" "/longitude_deg/ {print \$3}"),$(awk -F "[><]" "/<spherical_coordinates>/,/<\/spherical_coordinates>/" /aas/simulation_resources/simulation_worlds/<%= world %>.sdf | awk -F "[><]" "/elevation/ {print \$3}"),0          
           --out=udp:<%= subnet_prefix %>.1.<%= drone_id %>:8888
-          --out=udp:127.0.0.1:<%= 21550 + sitl_instance %>
-        - >
-          mavproxy.py --state-basedir=/aas/ardu_sitl_<%= drone_id %>/mavproxy --master=udp:127.0.0.1:<%= 21550 + sitl_instance %> 
-          --out=udp:127.0.0.1:<%= 14550 + sitl_instance %> --out=udp:127.0.0.1:<%= 14540 + sitl_instance %>
+          --out=udp:127.0.0.1:<%= 14540 + sitl_instance %> --out=udp:127.0.0.1:<%= 14550 + sitl_instance %>
         <% if is_quad %>
         - sleep <%= drone_id * 5 + 35 %> && tmux send-keys -t 'sim:ardupilot_sitl_<%= drone_id %>.0' 'rc 3 1500' C-m
         <% end %>
