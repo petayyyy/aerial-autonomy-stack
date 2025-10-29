@@ -36,6 +36,7 @@ windows:
           GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:/aas/simulation_resources/aircraft_models:/aas/simulation_resources/simulation_worlds 
           GZ_SIM_PHYSICS_ENGINE_PATH=$GZ_SIM_PHYSICS_ENGINE_PATH:/usr/lib/x86_64-linux-gnu/gz-physics-7/engine-plugins/
           gz sim -v4 -r <% if headless == 'true' %> -s <% end %> <% if autopilot == 'px4' %> <%= world %>.sdf <% elsif autopilot == 'ardupilot' %> populated_ardupilot.sdf <% end %>
+        - "ROS_DOMAIN_ID=98 ros2 run ros_gz_bridge parameter_bridge /clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"
         - >
           (
             PRIMARY_RES=$(xrandr | grep -oE '[0-9]+x[0-9]+' | head -1)
@@ -100,6 +101,8 @@ windows:
         <% end %>
   <% end %>
         - "ROS_DOMAIN_ID=<%= drone_id %> ros2 run ros_gz_bridge parameter_bridge /clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"
+        - mavproxy.py --state-basedir=/aas/sitl_<%= drone_id %>/mavproxy-oracle --master=udp:127.0.0.1:<%= 14540 + sitl_instance %> --out=udp:<%= subnet_prefix %>.1.98:<%= 14540 + sitl_instance %> 
+        - mavproxy.py --state-basedir=/aas/sitl_<%= drone_id %>/mavproxy-qgc --master=udp:127.0.0.1:<%= 14550 + sitl_instance %> --out=udp:<%= subnet_prefix %>.1.98:<%= 14550 + sitl_instance %> 
         <% if lidar == 'true' %>
         - "ROS_DOMAIN_ID=<%= drone_id %> ros2 run ros_gz_bridge parameter_bridge /world/<%= world %>/model/<%= model_name %>/<%= sensor_path %>model/simple_lidar/link/lidar/base_link/sensor/lidar3d/scan/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked --ros-args -r /world/<%= world %>/model/<%= model_name %>/<%= sensor_path %>model/simple_lidar/link/lidar/base_link/sensor/lidar3d/scan/points:=/lidar_points"
         <% end %>

@@ -28,15 +28,16 @@ echo "Desktop environment: $DESK_ENV"
 
 # Cleanup function
 cleanup() {
-  DOCKER_PIDS=$(pgrep -f "docker run.*simulation-image|docker run.*aircraft-image" 2>/dev/null || true)
-  SIMULATION_CONTAINERS=$(docker ps -a -q --filter name=simulation-container 2>/dev/null || true)
-  AIRCRAFT_CONTAINERS=$(docker ps -a -q --filter name=aircraft-container 2>/dev/null || true)
+  DOCKER_PIDS=$(pgrep -f "docker run.*(simulation|ground|aircraft)-image" 2>/dev/null || true)
+  CONTAINER_NAMES=("simulation-container" "ground-container" "aircraft-container")
+  CONTAINERS_TO_STOP=""
+  for name in "${CONTAINER_NAMES[@]}"; do
+      CONTAINERS_TO_STOP+=$(docker ps -a -q --filter name="${name}" 2>/dev/null || true)
+      CONTAINERS_TO_STOP+=" "
+  done
   echo "Stopping Docker containers (this will take a few seconds)..."
-  if [ -n "$SIMULATION_CONTAINERS" ]; then
-    docker stop $SIMULATION_CONTAINERS
-  fi
-  if [ -n "$AIRCRAFT_CONTAINERS" ]; then
-    docker stop $AIRCRAFT_CONTAINERS
+  if [ -n "$CONTAINERS_TO_STOP" ]; then
+      echo "$CONTAINERS_TO_STOP" | xargs docker stop
   fi
   docker network rm aas-network 2>/dev/null && echo "Removed aas-network" || echo "Network aas-network not found or already removed"
   if [ -n "$DOCKER_PIDS" ]; then
@@ -151,6 +152,32 @@ calculate_terminal_position 0
 xterm "${XTERM_CONFIG_ARGS[@]}" -title "Simulation" -fa Monospace -fs $FONT_SIZE -bg black -fg white -geometry "${TERM_COLS}x${TERM_ROWS}+${X_POS}+${Y_POS}" -hold -e bash -c "$DOCKER_CMD" &
 
 if [[ "$HITL" == "false" ]]; then
+  sleep 0.5 # Limit resource usage
+  # Launch the ground container
+  DOCKER_CMD="docker run -it --rm \
+    --volume /tmp/.X11-unix:/tmp/.X11-unix:rw --device /dev/dri --gpus all \
+    --env DISPLAY=$DISPLAY --env QT_X11_NO_MITSHM=1 --env NVIDIA_DRIVER_CAPABILITIES=all --env XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR \
+    --env ROS_DOMAIN_ID=98 --env AUTOPILOT=$AUTOPILOT --env DRONE_TYPE=$DRONE_TYPE \
+    --env NUM_QUADS=$NUM_QUADS --env NUM_VTOLS=$NUM_VTOLS \
+    --env WORLD=$WORLD --env HEADLESS=$HEADLESS --env CAMERA=$CAMERA --env LIDAR=$LIDAR \
+    --env SIMULATED_TIME=true \
+    --env SUBNET_PREFIX=$SUBNET_PREFIX \
+    --privileged \
+    --name ground-container"
+  # Configure network for HITL or SITL
+  if [[ "$HITL" == "true" ]]; then
+    DOCKER_CMD="$DOCKER_CMD --net=host"
+  else
+    DOCKER_CMD="$DOCKER_CMD --net=aas-network --ip=${SUBNET_PREFIX}.1.98"
+  fi
+  # Add WSL-specific options and complete the command
+  if [[ "$DESK_ENV" == "wsl" ]]; then
+    DOCKER_CMD="$DOCKER_CMD $WSL_OPTS"
+  fi
+  DOCKER_CMD="$DOCKER_CMD ${MODE_SIM_OPTS} ground-image"
+  calculate_terminal_position 1
+  xterm "${XTERM_CONFIG_ARGS[@]}" -title "Ground" -fa Monospace -fs $FONT_SIZE -bg black -fg white -geometry "${TERM_COLS}x${TERM_ROWS}+${X_POS}+${Y_POS}" -hold -e bash -c "$DOCKER_CMD" &
+
   # Initialize a counter for the drone IDs
   DRONE_ID=1 # 1, 2, .., N drones
 
@@ -177,7 +204,7 @@ if [[ "$HITL" == "false" ]]; then
         DOCKER_CMD="$DOCKER_CMD $WSL_OPTS"
       fi
       DOCKER_CMD="$DOCKER_CMD ${MODE_AIR_OPTS} aircraft-image"
-      calculate_terminal_position $DRONE_ID
+      calculate_terminal_position $(($DRONE_ID + 1))
       xterm "${XTERM_CONFIG_ARGS[@]}" -title "${drone_type^^} $DRONE_ID" -fa Monospace -fs $FONT_SIZE -bg black -fg white -geometry "${TERM_COLS}x${TERM_ROWS}+${X_POS}+${Y_POS}" -hold -e bash -c "$DOCKER_CMD" &
       DRONE_ID=$((DRONE_ID + 1))
     done
