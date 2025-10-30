@@ -297,25 +297,35 @@ DRONE_TYPE=quad AUTOPILOT=px4 DRONE_ID=1 CAMERA=true LIDAR=false ./deploy_run.sh
 > [!NOTE]
 > Currently, HITL only includes the Jetson computers, support for Pixhawk is work-in-progress
 
-Set up a LAN with netmask `255.255.0.0` and an arbitrary `SUBNET_PREFIX` (e.g. `192.168`) between:
+Set up a LAN with netmask `255.255.0.0` and an arbitrary `SIM_SUBNET` (e.g. `10.42`) between:
 
-- One simulation computer, with IP `[SUBNET_PREFIX].1.99`
-- `N` Jetson Baseboards with IPs `[SUBNET_PREFIX].1.1`, ..., `[SUBNET_PREFIX].1.N`
+- One simulation computer, with IP `[SIM_SUBNET].90.100`
+- `N` Jetson Baseboards with IPs `[SIM_SUBNET].90.1`, ..., `[SIM_SUBNET].90.N`
+
+**Optionally** set up a second LAN or [MANET](https://doodlelabs.com/product/nano/) with netmask `255.255.0.0` and arbitrary `AIR_SUBNET` (e.g. `10.22`) between:
+
+- One ground computer, with IP `[AIR_SUBNET].90.101`
+- `N` Jetson Baseboards with IPs `[AIR_SUBNET].90.1`, ..., `[AIR_SUBNET].90.N`
 
 First, start all aircraft containers, one on each Jetson (e.g. *via* SSH):
 ```sh
-# Jetson with IP [SUBNET_PREFIX].1.1
-HITL=true DRONE_ID=1 DRONE_TYPE=quad AUTOPILOT=px4 SUBNET_PREFIX=192.168 ./deploy_run.sh        # Add HEADLESS=false if a screen is connected to the Jetson
+# Jetson with IP ending in 90.1
+HITL=true DRONE_ID=1 DRONE_TYPE=quad AUTOPILOT=px4 SIM_SUBNET=10.42 AIR_SUBNET=10.22 ./deploy_run.sh        # Add HEADLESS=false if a screen is connected to the Jetson
 ```
 
 ```sh
-# Jetson with IP [SUBNET_PREFIX].1.2
-HITL=true DRONE_ID=2 DRONE_TYPE=quad AUTOPILOT=px4 SUBNET_PREFIX=192.168 ./deploy_run.sh
+# Jetson with IP ending in 90.2
+HITL=true DRONE_ID=2 DRONE_TYPE=quad AUTOPILOT=px4 SIM_SUBNET=10.42 AIR_SUBNET=10.22 ./deploy_run.sh
 ```
 
 Finally, on the simulation computer:
 ```sh
-HITL=true NUM_QUADS=2 NUM_VTOLS=0 AUTOPILOT=px4 SUBNET_PREFIX=192.168 ./sim_run.sh
+HITL=true NUM_QUADS=2 NUM_VTOLS=0 AUTOPILOT=px4 SIM_SUBNET=10.42 ./sim_run.sh
+```
+
+To enable the Zenoh bridge between aircraft containers over the `AIR_SUBNET`, on the ground computer:
+```sh
+# TODO deploy_run.sh for ground-container
 ```
 
 Once done, detach Tmux (and remove the containers) with `Ctrl + b`, then `d`
@@ -346,12 +356,11 @@ Once done, detach Tmux (and remove the containers) with `Ctrl + b`, then `d`
 
 ## PRs TODOS
 
-DAY 1
-- Dual network implementation
-- Test dev mode and update README
 DAY 2
 - Test on WSL
-- Restore optional QGC and zenoh in sim container but lose oracle/tracks, keep state sharing
+- For HITL, restore optional QGC in sim container 
+- FOR HITL, warn about loss of zenoh, /tracks, and state sharing
+- Update HITL instructions
 WEEK 2
 - Deploy build / run for ground (or infer from architecture) / update structure
 - Update HITL instructions and rationale deploy focus

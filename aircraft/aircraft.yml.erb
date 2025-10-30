@@ -74,7 +74,7 @@ windows:
         - ros2 run state_sharing state_sharing_node --ros-args -p autopilot:=<%= autopilot %> -p drone_id:=<%= drone_id %> <% if simulated_time == 'true' %> -p use_sim_time:=true<% end %>
         - >
           erb /aas/aircraft_resources/comms/zenoh_config_air.json5.erb > /aas/aircraft_resources/comms/zenoh_config_air.json5 &&
-          zenoh-bridge-ros2dds -e tcp/<%= sim_subnet %>.90.<%= ground_id %>:7447 -c /aas/aircraft_resources/comms/zenoh_config_air.json5
+          zenoh-bridge-ros2dds -e tcp/<%= air_subnet %>.90.<%= ground_id %>:7447 -c /aas/aircraft_resources/comms/zenoh_config_air.json5
 
   <% if record_rosbag == 'true' %>
   - logging:

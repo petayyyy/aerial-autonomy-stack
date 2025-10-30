@@ -13,7 +13,7 @@ CAMERA="${CAMERA:-true}" # Options: true (default), false
 LIDAR="${LIDAR:-true}" # Options: true (default), false 
 MODE="${MODE:-}" # Options: empty (default), dev, ...
 SIM_SUBNET="${SIM_SUBNET:-10.42}" # Simulation subnet (default = 10.42)
-AIR_SUBNET="${SIM_SUBNET:-10.22}" # Inter-vehicle subnet (default = 10.22)
+AIR_SUBNET="${AIR_SUBNET:-10.22}" # Inter-vehicle subnet (default = 10.22)
 SIM_ID="${SIM_ID:-100}" # Last byte of the simulation container IP (default = 100)
 GROUND_ID="${GROUND_ID:-101}" # Last byte of the simulation container IP (default = 101)
 HITL="${HITL:-false}" # Options: true, false (default)
@@ -43,6 +43,7 @@ cleanup() {
       echo "$CONTAINERS_TO_STOP" | xargs docker stop
   fi
   docker network rm aas-sim-network 2>/dev/null && echo "Removed aas-sim-network" || echo "Network aas-sim-network not found or already removed"
+  docker network rm aas-air-network 2>/dev/null && echo "Removed aas-air-network" || echo "Network aas-air-network not found or already removed"
   if [ -n "$DOCKER_PIDS" ]; then
     for dpid in $DOCKER_PIDS; do
       PARENT_PID=$(ps -o ppid= -p $dpid 2>/dev/null | tr -d ' ') # Determine process pids with a parent pid
@@ -91,6 +92,7 @@ fi
 # Create docker network for SITL
 if [[ "$HITL" == "false" ]]; then
   docker network inspect aas-sim-network >/dev/null 2>&1 || docker network create --subnet=${SIM_SUBNET}.0.0/16 aas-sim-network
+  docker network inspect aas-air-network >/dev/null 2>&1 || docker network create --subnet=${AIR_SUBNET}.0.0/16 aas-air-network
 fi
 
 # WSL-specific options
@@ -223,6 +225,13 @@ if [[ "$HITL" == "false" ]]; then
   launch_aircraft_containers "quad" $NUM_QUADS
   # Launch the VTOL containers
   launch_aircraft_containers "vtol" $NUM_VTOLS
+
+  # Finally, connect ground and aircraft containers to the air network
+  sleep 1
+  docker network connect --ip=${AIR_SUBNET}.90.$GROUND_ID aas-air-network ground-container
+  for i in $(seq 1 $((NUM_QUADS + NUM_VTOLS))); do
+    docker network connect --ip=${AIR_SUBNET}.90.$i aas-air-network aircraft-container_$i
+  done
 fi
 
 echo "Fly, my pretties, fly!"
