@@ -12,7 +12,10 @@ HEADLESS="${HEADLESS:-false}" # Options: true, false (default)
 CAMERA="${CAMERA:-true}" # Options: true (default), false
 LIDAR="${LIDAR:-true}" # Options: true (default), false 
 MODE="${MODE:-}" # Options: empty (default), dev, ...
-SUBNET_PREFIX="${SUBNET_PREFIX:-42.42}" # Subnet prefix, e.g., 42.42 (default), 192.168, etc.
+SIM_SUBNET="${SIM_SUBNET:-10.42}" # Simulation subnet (default = 10.42)
+AIR_SUBNET="${SIM_SUBNET:-10.22}" # Inter-vehicle subnet (default = 10.22)
+SIM_ID="${SIM_ID:-100}" # Last byte of the simulation container IP (default = 100)
+GROUND_ID="${GROUND_ID:-101}" # Last byte of the simulation container IP (default = 101)
 HITL="${HITL:-false}" # Options: true, false (default)
 
 # Detect the environment (Ubuntu/GNOME, WSL, etc.)
@@ -39,7 +42,7 @@ cleanup() {
   if [ -n "$CONTAINERS_TO_STOP" ]; then
       echo "$CONTAINERS_TO_STOP" | xargs docker stop
   fi
-  docker network rm aas-network 2>/dev/null && echo "Removed aas-network" || echo "Network aas-network not found or already removed"
+  docker network rm aas-sim-network 2>/dev/null && echo "Removed aas-sim-network" || echo "Network aas-sim-network not found or already removed"
   if [ -n "$DOCKER_PIDS" ]; then
     for dpid in $DOCKER_PIDS; do
       PARENT_PID=$(ps -o ppid= -p $dpid 2>/dev/null | tr -d ' ') # Determine process pids with a parent pid
@@ -87,8 +90,7 @@ fi
 
 # Create docker network for SITL
 if [[ "$HITL" == "false" ]]; then
-  NETWORK_NAME="aas-network"
-  docker network inspect "$NETWORK_NAME" >/dev/null 2>&1 || docker network create --subnet=${SUBNET_PREFIX}.0.0/16 "$NETWORK_NAME"
+  docker network inspect aas-sim-network >/dev/null 2>&1 || docker network create --subnet=${SIM_SUBNET}.0.0/16 aas-sim-network
 fi
 
 # WSL-specific options
@@ -136,18 +138,19 @@ XTERM_CONFIG_ARGS=(
 DOCKER_CMD="docker run -it --rm \
   --volume /tmp/.X11-unix:/tmp/.X11-unix:rw --device /dev/dri --gpus all \
   --env DISPLAY=$DISPLAY --env QT_X11_NO_MITSHM=1 --env NVIDIA_DRIVER_CAPABILITIES=all --env XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR \
-  --env ROS_DOMAIN_ID=99 --env AUTOPILOT=$AUTOPILOT --env DRONE_TYPE=$DRONE_TYPE \
+  --env ROS_DOMAIN_ID=$SIM_ID --env AUTOPILOT=$AUTOPILOT --env DRONE_TYPE=$DRONE_TYPE \
   --env NUM_QUADS=$NUM_QUADS --env NUM_VTOLS=$NUM_VTOLS \
   --env WORLD=$WORLD --env HEADLESS=$HEADLESS --env CAMERA=$CAMERA --env LIDAR=$LIDAR \
   --env SIMULATED_TIME=true \
-  --env SUBNET_PREFIX=$SUBNET_PREFIX \
+  --env SIM_SUBNET=$SIM_SUBNET \
+  --env SIM_ID=$SIM_ID --env GROUND_ID=$GROUND_ID \
   --privileged \
   --name simulation-container"
 # Configure network for HITL or SITL
 if [[ "$HITL" == "true" ]]; then
   DOCKER_CMD="$DOCKER_CMD --net=host"
 else
-  DOCKER_CMD="$DOCKER_CMD --net=aas-network --ip=${SUBNET_PREFIX}.1.99"
+  DOCKER_CMD="$DOCKER_CMD --net=aas-sim-network --ip=${SIM_SUBNET}.90.${SIM_ID}"
 fi
 # Add WSL-specific options and complete the command
 if [[ "$DESK_ENV" == "wsl" ]]; then
@@ -163,17 +166,18 @@ if [[ "$HITL" == "false" ]]; then
   DOCKER_CMD="docker run -it --rm \
     --volume /tmp/.X11-unix:/tmp/.X11-unix:rw --device /dev/dri --gpus all \
     --env DISPLAY=$DISPLAY --env QT_X11_NO_MITSHM=1 --env NVIDIA_DRIVER_CAPABILITIES=all --env XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR \
-    --env ROS_DOMAIN_ID=98 \
+    --env ROS_DOMAIN_ID=$GROUND_ID \
     --env NUM_QUADS=$NUM_QUADS --env NUM_VTOLS=$NUM_VTOLS \
     --env HEADLESS=$HEADLESS --env SIMULATED_TIME=true \
-    --env SUBNET_PREFIX=$SUBNET_PREFIX \
+    --env SIM_SUBNET=$SIM_SUBNET \
+    --env SIM_ID=$SIM_ID --env GROUND_ID=$GROUND_ID \
     --privileged \
     --name ground-container"
   # Configure network for HITL or SITL
   if [[ "$HITL" == "true" ]]; then
     DOCKER_CMD="$DOCKER_CMD --net=host"
   else
-    DOCKER_CMD="$DOCKER_CMD --net=aas-network --ip=${SUBNET_PREFIX}.1.98"
+    DOCKER_CMD="$DOCKER_CMD --net=aas-sim-network --ip=${SIM_SUBNET}.90.${GROUND_ID}"
   fi
   # Add WSL-specific options and complete the command
   if [[ "$DESK_ENV" == "wsl" ]]; then
@@ -200,8 +204,9 @@ if [[ "$HITL" == "false" ]]; then
         --env DRONE_TYPE=$drone_type \
         --env DRONE_ID=$DRONE_ID --env HEADLESS=$HEADLESS --env CAMERA=$CAMERA --env LIDAR=$LIDAR \
         --env SIMULATED_TIME=true \
-        --env SUBNET_PREFIX=$SUBNET_PREFIX \
-        --net=aas-network --ip=${SUBNET_PREFIX}.1.$DRONE_ID \
+        --env SIM_SUBNET=$SIM_SUBNET \
+        --env SIM_ID=$SIM_ID --env GROUND_ID=$GROUND_ID \
+        --net=aas-sim-network --ip=${SIM_SUBNET}.90.$DRONE_ID \
         --privileged \
         --name aircraft-container_$DRONE_ID"
       # Add WSL-specific options and complete the command

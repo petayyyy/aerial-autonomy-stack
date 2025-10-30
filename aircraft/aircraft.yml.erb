@@ -6,7 +6,10 @@
 <% lidar = ENV.fetch('LIDAR', 'true') %>
 <% simulated_time = ENV.fetch('SIMULATED_TIME', 'false') %>
 <% record_rosbag = ENV.fetch('RECORD_ROSBAG', 'false') %>
-<% subnet_prefix = ENV.fetch('SUBNET_PREFIX', '42.42') %>
+<% sim_subnet = ENV.fetch('SIM_SUBNET', '10.42') %>
+<% air_subnet = ENV.fetch('AIR_SUBNET', '10.22') %>
+<% sim_id = ENV.fetch('SIM_ID', '100') %>
+<% ground_id = ENV.fetch('GROUND_ID', '101') %>
 <% hitl = ENV.fetch('HITL', 'false') %>
 
 name: drone
@@ -44,7 +47,7 @@ windows:
         - >
           <% if simulated_time == 'true' %>
           sudo sed -i '0,/ros__parameters:/s/ros__parameters:/ros__parameters:\n    use_sim_time: true/' /opt/ros/humble/share/mavros/launch/apm_config.yaml && 
-          ros2 launch mavros apm.launch fcu_url:=udp://<%= subnet_prefix %>.1.<%= drone_id %>:8888@8888 tgt_system:=<%= drone_id %>
+          ros2 launch mavros apm.launch fcu_url:=udp://<%= sim_subnet %>.90.<%= drone_id %>:8888@8888 tgt_system:=<%= drone_id %>
           <% else %>
           python3 /aas/aircraft_resources/patches/request_mavlink_streams.py --device '/dev/ttyTHS1' --baudrate 921600 --target-system <%= drone_id %> --target-component 1 --rate 4 &&
           ros2 launch mavros apm.launch fcu_url:=/dev/ttyTHS1:921600 tgt_system:=<%= drone_id %>
@@ -71,7 +74,7 @@ windows:
         - ros2 run state_sharing state_sharing_node --ros-args -p autopilot:=<%= autopilot %> -p drone_id:=<%= drone_id %> <% if simulated_time == 'true' %> -p use_sim_time:=true<% end %>
         - >
           erb /aas/aircraft_resources/comms/zenoh_config_air.json5.erb > /aas/aircraft_resources/comms/zenoh_config_air.json5 &&
-          zenoh-bridge-ros2dds -e tcp/<%= subnet_prefix %>.1.98:7447 -c /aas/aircraft_resources/comms/zenoh_config_air.json5
+          zenoh-bridge-ros2dds -e tcp/<%= sim_subnet %>.90.<%= ground_id %>:7447 -c /aas/aircraft_resources/comms/zenoh_config_air.json5
 
   <% if record_rosbag == 'true' %>
   - logging:

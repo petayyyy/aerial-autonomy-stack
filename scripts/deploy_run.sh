@@ -11,7 +11,10 @@ HEADLESS="${HEADLESS:-true}" # Options: true (default), false
 CAMERA="${CAMERA:-true}" # Options: true (default), false
 LIDAR="${LIDAR:-true}" # Options: true (default), false
 MODE="${MODE:-}" # Options: empty (default), dev, ...
-SUBNET_PREFIX="${SUBNET_PREFIX:-42.42}" # Subnet prefix, e.g., 42.42 (default), 192.168, etc.
+SIM_SUBNET="${SIM_SUBNET:-10.42}" # Simulation subnet (default = 10.42)
+AIR_SUBNET="${SIM_SUBNET:-10.22}" # Inter-vehicle subnet (default = 10.22)
+SIM_ID="${SIM_ID:-100}" # Last byte of the simulation container IP (default = 100)
+GROUND_ID="${GROUND_ID:-101}" # Last byte of the simulation container IP (default = 101)
 HITL="${HITL:-false}" # Options: true, false (default)
 
 # Initialize an empty variable for the flags
@@ -68,7 +71,8 @@ docker run $DOCKER_RUN_FLAGS \
   --env ROS_DOMAIN_ID=$DRONE_ID --env AUTOPILOT=$AUTOPILOT --env DRONE_TYPE=$DRONE_TYPE \
   --env DRONE_ID=$DRONE_ID --env HEADLESS=$HEADLESS --env CAMERA=$CAMERA --env LIDAR=$LIDAR --env GST_DEBUG=3 \
   --env HITL=$HITL --env SIMULATED_TIME=$HITL \
-  --env SUBNET_PREFIX=$SUBNET_PREFIX \
+  --env SIM_SUBNET=$SIM_SUBNET \
+  --env SIM_ID=$SIM_ID --env GROUND_ID=$GROUND_ID \
   --net=host \
   --privileged \
   --name aircraft-container_$DRONE_ID \

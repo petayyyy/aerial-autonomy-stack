@@ -130,7 +130,7 @@ ros2 run mission mission --conops yalla \
 
 Finally, in the simulation's Xterm terminal:
 ```sh
-/aas/simulation_resources/patches/plot_logs.sh                         # Analyze the flight logs at http://42.42.1.99:5006/browse or in MAVExplorer
+/aas/simulation_resources/patches/plot_logs.sh                         # Analyze the flight logs at http://10.42.90.100:5006/browse or in MAVExplorer
 ```
 
 To create a new mission, read the banner comments in [`ardupilot_interface.hpp`](/aircraft/aircraft_ws/src/autopilot_interface/src/ardupilot_interface.hpp) and [`px4_interface.hpp`](/aircraft/aircraft_ws/src/autopilot_interface/src/px4_interface.hpp) for command line examples of takeoff, orbit, reposition, offboard, land
@@ -346,13 +346,15 @@ Once done, detach Tmux (and remove the containers) with `Ctrl + b`, then `d`
 
 ## PRs TODOS
 
-- Dual network or subnet implementation for HITL
-- Search: .1.99 / .1.98 / .1. / 42.42 / 192.168
+DAY 1
+- Dual network implementation
 - Test dev mode and update README
+DAY 2
 - Test on WSL
-- Deploy build / run for ground (infer from architecture) / update structure
+- Restore optional QGC and zenoh in sim container but lose oracle/tracks, keep state sharing
+WEEK 2
+- Deploy build / run for ground (or infer from architecture) / update structure
 - Update HITL instructions and rationale deploy focus
-- Restore optional QGC in sim container but lose oracle and zenoh (tracks, state sharing)
 
 ## TODOs
 

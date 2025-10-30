@@ -6,7 +6,10 @@
 <% camera = ENV.fetch('CAMERA', 'true') %>
 <% lidar = ENV.fetch('LIDAR', 'true') %>
 <% simulated_time = ENV.fetch('SIMULATED_TIME', 'false') %>
-<% subnet_prefix = ENV.fetch('SUBNET_PREFIX', '42.42') %>
+<% sim_subnet = ENV.fetch('SIM_SUBNET', '10.42') %>
+<% air_subnet = ENV.fetch('AIR_SUBNET', '10.22') %>
+<% sim_id = ENV.fetch('SIM_ID', '100') %>
+<% ground_id = ENV.fetch('GROUND_ID', '101') %>
 <% hitl = ENV.fetch('HITL', 'false') %>
 
 name: sim
@@ -36,7 +39,7 @@ windows:
           GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:/aas/simulation_resources/aircraft_models:/aas/simulation_resources/simulation_worlds 
           GZ_SIM_PHYSICS_ENGINE_PATH=$GZ_SIM_PHYSICS_ENGINE_PATH:/usr/lib/x86_64-linux-gnu/gz-physics-7/engine-plugins/
           gz sim -v4 -r <% if headless == 'true' %> -s <% end %> <% if autopilot == 'px4' %> <%= world %>.sdf <% elsif autopilot == 'ardupilot' %> populated_ardupilot.sdf <% end %>
-        - "ROS_DOMAIN_ID=98 ros2 run ros_gz_bridge parameter_bridge /clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"
+        - "ROS_DOMAIN_ID=<%= ground_id %> ros2 run ros_gz_bridge parameter_bridge /clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"
         - >
           (
             PRIMARY_RES=$(xrandr | grep -oE '[0-9]+x[0-9]+' | head -1)
@@ -81,7 +84,7 @@ windows:
           sleep <%= drone_id * 3 %> &&
           PX4_GZ_MODEL_POSE="<%= x_offset %>,<%= y_offset %>,0.5,0,0,0"
           PX4_SYS_AUTOSTART=<%= autostart %> ROS_DOMAIN_ID=<%= drone_id %>
-          PX4_UXRCE_DDS_NS="Drone<%= drone_id %>" PX4_UXRCE_DDS_AG_IP="<%= subnet_prefix %>.1.<%= drone_id %>" PX4_UXRCE_DDS_PORT=8888
+          PX4_UXRCE_DDS_NS="Drone<%= drone_id %>" PX4_UXRCE_DDS_AG_IP="<%= sim_subnet %>.90.<%= drone_id %>" PX4_UXRCE_DDS_PORT=8888
           /aas/github_apps/PX4-Autopilot/build/px4_sitl_default/bin/px4 -i <%= sitl_instance %>
   <% elsif autopilot == 'ardupilot' %>
   - ardupilot_sitl_<%= drone_id %>:
@@ -94,15 +97,15 @@ windows:
           -I <%= sitl_instance %> --sysid <%= drone_id %>
           --add-param-file=/aas/simulation_resources/aircraft_models/<%= model_name %>/ardupilot-4.6.params
           -l $(awk -F "[><]" "/<spherical_coordinates>/,/<\/spherical_coordinates>/" /aas/simulation_resources/simulation_worlds/<%= world %>.sdf | awk -F "[><]" "/latitude_deg/ {print \$3}"),$(awk -F "[><]" "/<spherical_coordinates>/,/<\/spherical_coordinates>/" /aas/simulation_resources/simulation_worlds/<%= world %>.sdf | awk -F "[><]" "/longitude_deg/ {print \$3}"),$(awk -F "[><]" "/<spherical_coordinates>/,/<\/spherical_coordinates>/" /aas/simulation_resources/simulation_worlds/<%= world %>.sdf | awk -F "[><]" "/elevation/ {print \$3}"),0          
-          --out=udp:<%= subnet_prefix %>.1.<%= drone_id %>:8888
+          --out=udp:<%= sim_subnet %>.90.<%= drone_id %>:8888
           --out=udp:127.0.0.1:<%= 14540 + sitl_instance %> --out=udp:127.0.0.1:<%= 14550 + sitl_instance %>
         <% if is_quad %>
         - sleep <%= drone_id * 5 + 35 %> && tmux send-keys -t 'sim:ardupilot_sitl_<%= drone_id %>.0' 'rc 3 1500' C-m
         <% end %>
   <% end %>
         - "ROS_DOMAIN_ID=<%= drone_id %> ros2 run ros_gz_bridge parameter_bridge /clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"
-        - mavproxy.py --state-basedir=/aas/mavproxy_<%= drone_id %>/ground --master=udp:127.0.0.1:<%= 14540 + sitl_instance %> --out=udp:<%= subnet_prefix %>.1.98:<%= 14540 + sitl_instance %> --streamrate -1
-        - mavproxy.py --state-basedir=/aas/mavproxy_<%= drone_id %>/qgc --master=udp:127.0.0.1:<%= 14550 + sitl_instance %> --out=udp:<%= subnet_prefix %>.1.98:<%= 14550 + sitl_instance %> --streamrate -1
+        - mavproxy.py --state-basedir=/aas/mavproxy_<%= drone_id %>/ground --master=udp:127.0.0.1:<%= 14540 + sitl_instance %> --out=udp:<%= sim_subnet %>.90.<%= ground_id %>:<%= 14540 + sitl_instance %> --streamrate -1
+        - sleep 1 && mavproxy.py --state-basedir=/aas/mavproxy_<%= drone_id %>/qgc --master=udp:127.0.0.1:<%= 14550 + sitl_instance %> --out=udp:<%= sim_subnet %>.90.<%= ground_id %>:<%= 14550 + sitl_instance %> --streamrate -1
         <% if lidar == 'true' %>
         - "ROS_DOMAIN_ID=<%= drone_id %> ros2 run ros_gz_bridge parameter_bridge /world/<%= world %>/model/<%= model_name %>/<%= sensor_path %>model/simple_lidar/link/lidar/base_link/sensor/lidar3d/scan/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked --ros-args -r /world/<%= world %>/model/<%= model_name %>/<%= sensor_path %>model/simple_lidar/link/lidar/base_link/sensor/lidar3d/scan/points:=/lidar_points"
         <% end %>
@@ -111,6 +114,6 @@ windows:
           sleep <%= drone_id * 3 %> && 
           python3 /aas/simulation_resources/comms/gz_to_gst_image_bridge.py 
           --gz_topic /world/<%= world %>/model/<%= model_name %>/<%= sensor_path %>model/simple_camera/link/mono_cam/base_link/sensor/imager/image
-          --ip <%= subnet_prefix %>.1.<%= drone_id %> --port 5600
+          --ip <%= sim_subnet %>.90.<%= drone_id %> --port 5600
         <% end %>
   <% end %>
