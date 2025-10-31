@@ -41,5 +41,6 @@ For even more resources, check out [`aerial_robotic_landscape`](https://github.c
     - XRCE-DDS (PX4), MAVROS (ArduPilot) autopilot-to-companion board ROS2 UDP bridge
     - GStreamer camera-to-companion board acquisition
     - Zenoh inter-vehicle ROS2 bridge, with networking over LAN (HITL) or emulated by `docker network` (SITL)
+    - Dual network—in both SITL and HITL—to separate synthetic sensor data from inter-vehicle communication
 
 [![Star History Chart](https://api.star-history.com/svg?repos=JacopoPan/aerial-autonomy-stack,robin-shaun/XTDrone,KumarRobotics/kr_autonomous_flight,ctu-mrs/mrs_uav_system,uzh-rpg/agilicious,CopterExpress/clover,caochao39/aerial_navigation_development_environment,aerostack2/aerostack2,IMRCLab/crazyswarm2&type=Date)](https://www.star-history.com/#JacopoPan/aerial-autonomy-stack&robin-shaun/XTDrone&KumarRobotics/kr_autonomous_flight&ctu-mrs/mrs_uav_system&uzh-rpg/agilicious&CopterExpress/clover&caochao39/aerial_navigation_development_environment&aerostack2/aerostack2&IMRCLab/crazyswarm2&Date&LogScale)

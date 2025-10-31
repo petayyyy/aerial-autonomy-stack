@@ -22,6 +22,7 @@ https://github.com/user-attachments/assets/c194ada6-2996-4bfa-99e9-32b45e29281d
 - **Windows 11 compatibility** with GPU support *via* WSLg
 - **3D worlds** for perception-based simulation
 - Distributed, **Hardware-(Jetson-)in-the-loop (HITL) simulation** to test on-board compute and networking
+- **Dual network** in both SITL and HITL for synthetic sensor data (`SIM_SUBNET`) and inter-vehicle communication (`AIR_SUBNET`)
 - [Zenoh](https://github.com/eclipse-zenoh/zenoh-plugin-ros2dds) inter-vehicle ROS2 bridge
 - Support for [PX4 Offboard](https://docs.px4.io/main/en/flight_modes/offboard.html) mode (e.g. CTBR/`VehicleRatesSetpoint` for agile, GNSS-denied flight) 
 - Support for [ArduPilot Guided](https://ardupilot.org/copter/docs/ac2_guidedmode.html) mode (i.e. `setpoint_velocity`, `setpoint_accel` references)
