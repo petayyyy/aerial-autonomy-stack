@@ -1,9 +1,11 @@
-<% headless = ENV.fetch('HEADLESS', 'false') %>
+<% 
+  headless = ENV.fetch('HEADLESS', 'false') == 'true'
 
-<% num_quads = ENV.fetch('NUM_QUADS', 1).to_i %>
-<% num_vtols = ENV.fetch('NUM_VTOLS', 0).to_i %>
+  num_quads = ENV.fetch('NUM_QUADS', 1).to_i
+  num_vtols = ENV.fetch('NUM_VTOLS', 0).to_i
 
-<% simulated_time = ENV.fetch('SIMULATED_TIME', 'false') %>
+  simulated_time = ENV.fetch('SIMULATED_TIME', 'false') == 'true'
+%>
 
 name: ground
 
@@ -17,13 +19,13 @@ windows:
   - ground_system_over_zenoh:
       layout: even-vertical
       panes:
-        - ros2 run ground_system oracle --num-drones <%=  num_quads + num_vtols %> --base-port 14540 --rate 1.0 <% if simulated_time == 'true' %> --ros-args -p use_sim_time:=True<% end %>
+        - ros2 run ground_system oracle --num-drones <%=  num_quads + num_vtols %> --base-port 14540 --rate 1.0 <%= simulated_time ? ' --ros-args -p use_sim_time:=True' : '' %>
         - zenoh-bridge-ros2dds -c /aas/ground_resources/comms/zenoh_config_ground.json5
 
   - qgc:
       layout: even-horizontal
       panes:
-        <% if headless == 'true' %>
+        <% if headless %>
         - echo "Headless mode, not launching QGroundControl."
         <% else %>
         - >
@@ -38,7 +40,7 @@ windows:
             WIN_W=$(( 800 * SCREEN_SCALE / 100 )); WIN_H=$(( 600 * SCREEN_SCALE / 100 ))
             POS_X=$((SCREEN_W - WIN_W)); POS_Y=$((WIN_H))
             for i in {1..10}; do 
-              sleep 2
+              sleep 3
               if wmctrl -l | grep -q "QGroundControl"; then
                 wmctrl -r "QGroundControl" -e "0,$POS_X,$POS_Y,$WIN_W,$WIN_H" && break
               fi

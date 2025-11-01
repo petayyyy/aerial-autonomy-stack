@@ -1,18 +1,25 @@
-<% autopilot = ENV.fetch('AUTOPILOT', 'px4') %>
-<% headless = ENV.fetch('HEADLESS', 'false') %>
-<% camera = ENV.fetch('CAMERA', 'true') %>
-<% lidar = ENV.fetch('LIDAR', 'true') %>
+<% 
+  autopilot = ENV.fetch('AUTOPILOT', 'px4')
+  headless = ENV.fetch('HEADLESS', 'false') == 'true'
+  camera = ENV.fetch('CAMERA', 'true') == 'true'
+  lidar = ENV.fetch('LIDAR', 'true') == 'true'
 
-<% sim_subnet = ENV.fetch('SIM_SUBNET', '10.42') %>
-<% ground_id = ENV.fetch('GROUND_ID', '101') %>
+  sim_subnet = ENV.fetch('SIM_SUBNET', '10.42')
+  ground_id = ENV.fetch('GROUND_ID', '101')
 
-<% num_quads = ENV.fetch('NUM_QUADS', 1).to_i %>
-<% num_vtols = ENV.fetch('NUM_VTOLS', 0).to_i %>
-<% world = ENV.fetch('WORLD', 'impalpable_greyness') %>
+  num_quads = ENV.fetch('NUM_QUADS', 1).to_i
+  num_vtols = ENV.fetch('NUM_VTOLS', 0).to_i
+  world = ENV.fetch('WORLD', 'impalpable_greyness')
 
-<% gnd_container = ENV.fetch('GND_CONTAINER', 'true') %>
+  gnd_container = ENV.fetch('GND_CONTAINER', 'true') == 'true'
 
-<% simulated_time = ENV.fetch('SIMULATED_TIME', 'false') %>
+  simulated_time = ENV.fetch('SIMULATED_TIME', 'false') == 'true'
+%>
+<% 
+  drones = []
+  num_quads.times { |i| drones << { type: 'quad', index: i } }
+  num_vtols.times { |i| drones << { type: 'vtol', index: i } }
+%>
 
 name: sim
 
@@ -27,10 +34,10 @@ windows:
       layout: main-vertical
       panes:
         - >
-          <% if camera == 'false' %>
+          <% unless camera %>
           sed -i '/<sensor/,/<\/sensor>/d' /aas/simulation_resources/aircraft_models/sensor_camera/model.sdf &&
           <% end %>
-          <% if lidar == 'false' %>
+          <% unless lidar %>
           sed -i '/<sensor/,/<\/sensor>/d'  /aas/simulation_resources/aircraft_models/sensor_lidar/model.sdf &&
           <% end %>
           <% if autopilot == 'ardupilot' %>
@@ -40,8 +47,8 @@ windows:
           <% end %>
           GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:/aas/simulation_resources/aircraft_models:/aas/simulation_resources/simulation_worlds 
           GZ_SIM_PHYSICS_ENGINE_PATH=$GZ_SIM_PHYSICS_ENGINE_PATH:/usr/lib/x86_64-linux-gnu/gz-physics-7/engine-plugins/
-          gz sim -v4 -r <% if headless == 'true' %> -s <% end %> <% if autopilot == 'px4' %> <%= world %>.sdf <% elsif autopilot == 'ardupilot' %> populated_ardupilot.sdf <% end %>
-        <% if gnd_container == 'true' %>
+          gz sim -v4 -r <%= headless ? '-s' : '' %> <%= autopilot == 'px4' ? "#{world}.sdf" : "populated_ardupilot.sdf" %>
+        <% if gnd_container %>
         - "ROS_DOMAIN_ID=<%= ground_id %> ros2 run ros_gz_bridge parameter_bridge /clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"
         <% end %>
         - >
@@ -52,18 +59,13 @@ windows:
             WIN_W=$(( 800 * SCREEN_SCALE / 100 )); WIN_H=$(( 600 * SCREEN_SCALE / 100 ))
             POS_X=$((SCREEN_W - WIN_W)); POS_Y=$(( 0 ))
             for i in {1..10}; do 
-              sleep 2
+              sleep 3
               if wmctrl -l | grep -q "Gazebo Sim"; then
                 wmctrl -r "Gazebo Sim" -e "0,$POS_X,$POS_Y,$WIN_W,$WIN_H" && break
               fi
             done
           )
 
-  <% 
-    drones = []
-    num_quads.times { |i| drones << { type: 'quad', index: i } }
-    num_vtols.times { |i| drones << { type: 'vtol', index: i } }
-  %>
   <% drones.each_with_index do |drone, sitl_instance| %>
   <% 
     drone_id = sitl_instance + 1
@@ -86,9 +88,9 @@ windows:
       panes:
         - >
           sleep <%= drone_id * 3 %> &&
-          PX4_GZ_MODEL_POSE="<%= x_offset %>,<%= y_offset %>,0.5,0,0,0"
+          PX4_GZ_MODEL_POSE=<%= "#{x_offset},#{y_offset},0.5,0,0,0" %>
           PX4_SYS_AUTOSTART=<%= autostart %> ROS_DOMAIN_ID=<%= drone_id %>
-          PX4_UXRCE_DDS_NS="Drone<%= drone_id %>" PX4_UXRCE_DDS_AG_IP="<%= sim_subnet %>.90.<%= drone_id %>" PX4_UXRCE_DDS_PORT=8888
+          PX4_UXRCE_DDS_NS="Drone<%= drone_id %>" PX4_UXRCE_DDS_AG_IP=<%= "#{sim_subnet}.90.#{drone_id}" %> PX4_UXRCE_DDS_PORT=8888
           /aas/github_apps/PX4-Autopilot/build/px4_sitl_default/bin/px4 -i <%= sitl_instance %>
   <% elsif autopilot == 'ardupilot' %>
   - ardupilot_sitl_<%= drone_id %>:
@@ -101,30 +103,30 @@ windows:
           -I <%= sitl_instance %> --sysid <%= drone_id %>
           --add-param-file=/aas/simulation_resources/aircraft_models/<%= model_name %>/ardupilot-4.6.params
           -l $(awk -F "[><]" "/<spherical_coordinates>/,/<\/spherical_coordinates>/" /aas/simulation_resources/simulation_worlds/<%= world %>.sdf | awk -F "[><]" "/latitude_deg/ {print \$3}"),$(awk -F "[><]" "/<spherical_coordinates>/,/<\/spherical_coordinates>/" /aas/simulation_resources/simulation_worlds/<%= world %>.sdf | awk -F "[><]" "/longitude_deg/ {print \$3}"),$(awk -F "[><]" "/<spherical_coordinates>/,/<\/spherical_coordinates>/" /aas/simulation_resources/simulation_worlds/<%= world %>.sdf | awk -F "[><]" "/elevation/ {print \$3}"),0          
-          --out=udp:<%= sim_subnet %>.90.<%= drone_id %>:8888
+          --out=udp:<%= "#{sim_subnet}.90.#{drone_id}" %>:8888
           --out=udp:127.0.0.1:<%= 14540 + sitl_instance %> --out=udp:127.0.0.1:<%= 14550 + sitl_instance %>
         <% if is_quad %>
         - sleep <%= drone_id * 5 + 35 %> && tmux send-keys -t 'sim:ardupilot_sitl_<%= drone_id %>.0' 'rc 3 1500' C-m
         <% end %>
   <% end %>
         - "ROS_DOMAIN_ID=<%= drone_id %> ros2 run ros_gz_bridge parameter_bridge /clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"
-        <% if gnd_container == 'true' %>
-        - mavproxy.py --state-basedir=/aas/mavproxy_<%= drone_id %>/ground --master=udp:127.0.0.1:<%= 14540 + sitl_instance %> --out=udp:<%= sim_subnet %>.90.<%= ground_id %>:<%= 14540 + sitl_instance %> --streamrate -1
-        - sleep 1 && mavproxy.py --state-basedir=/aas/mavproxy_<%= drone_id %>/qgc --master=udp:127.0.0.1:<%= 14550 + sitl_instance %> --out=udp:<%= sim_subnet %>.90.<%= ground_id %>:<%= 14550 + sitl_instance %> --streamrate -1
+        <% if gnd_container %>
+        - mavproxy.py --state-basedir=/aas/mavproxy_<%= drone_id %>/ground --master=udp:127.0.0.1:<%= 14540 + sitl_instance %> --out=udp:<%= "#{sim_subnet}.90.#{ground_id}" %>:<%= 14540 + sitl_instance %> --streamrate -1
+        - sleep 1 && mavproxy.py --state-basedir=/aas/mavproxy_<%= drone_id %>/qgc --master=udp:127.0.0.1:<%= 14550 + sitl_instance %> --out=udp:<%= "#{sim_subnet}.90.#{ground_id}" %>:<%= 14550 + sitl_instance %> --streamrate -1
         <% end %>
-        <% if lidar == 'true' %>
+        <% if lidar %>
         - "ROS_DOMAIN_ID=<%= drone_id %> ros2 run ros_gz_bridge parameter_bridge /world/<%= world %>/model/<%= model_name %>/<%= sensor_path %>model/simple_lidar/link/lidar/base_link/sensor/lidar3d/scan/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked --ros-args -r /world/<%= world %>/model/<%= model_name %>/<%= sensor_path %>model/simple_lidar/link/lidar/base_link/sensor/lidar3d/scan/points:=/lidar_points"
         <% end %>
-        <% if camera == 'true' %>
+        <% if camera %>
         - >
           sleep <%= drone_id * 3 %> && 
           python3 /aas/simulation_resources/comms/gz_to_gst_image_bridge.py 
           --gz_topic /world/<%= world %>/model/<%= model_name %>/<%= sensor_path %>model/simple_camera/link/mono_cam/base_link/sensor/imager/image
-          --ip <%= sim_subnet %>.90.<%= drone_id %> --port 5600
+          --ip <%= "#{sim_subnet}.90.#{drone_id}" %> --port 5600
         <% end %>
   <% end %>
 
-  <% if gnd_container == 'false' %>
+  <% unless gnd_container %>
   - zenoh:
       layout: even-vertical
       panes:
@@ -133,7 +135,7 @@ windows:
   - qgc:
       layout: even-horizontal
       panes:
-        <% if headless == 'true' %>
+        <% if headless %>
         - echo "Headless mode, not launching QGroundControl."
         <% else %>
         - >
@@ -148,7 +150,7 @@ windows:
             WIN_W=$(( 800 * SCREEN_SCALE / 100 )); WIN_H=$(( 600 * SCREEN_SCALE / 100 ))
             POS_X=$((SCREEN_W - WIN_W)); POS_Y=$((WIN_H))
             for i in {1..10}; do 
-              sleep 2
+              sleep 3
               if wmctrl -l | grep -q "QGroundControl"; then
                 wmctrl -r "QGroundControl" -e "0,$POS_X,$POS_Y,$WIN_W,$WIN_H" && break
               fi
