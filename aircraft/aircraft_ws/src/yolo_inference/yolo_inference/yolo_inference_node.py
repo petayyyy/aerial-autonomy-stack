@@ -58,10 +58,12 @@ def xywh2xyxy(box):
     return coord
 
 class YoloInferenceNode(Node):
-    def __init__(self, headless, hitl):
+    def __init__(self, headless, hitl, hfov, vfov):
         super().__init__('yolo_inference_node')
         self.headless = headless
         self.hitl = hitl
+        self.hfov = hfov
+        self.vfov = vfov
         self.architecture = platform.machine()
         
         # Load classes
@@ -283,20 +285,33 @@ class YoloInferenceNode(Node):
         detection_array_msg = Detection2DArray()
         detection_array_msg.header.stamp = self.get_clock().now().to_msg()
         detection_array_msg.header.frame_id = "camera_frame"
+        image_height, image_width = frame.shape[:2]
 
         for i in range(len(boxes)):
             x1, y1, x2, y2 = boxes[i]
             bbox = BoundingBox2D()
-            bbox.center.position.x = float((x1 + x2) / 2.0)
-            bbox.center.position.y = float((y1 + y2) / 2.0)
+            center_x = float((x1 + x2) / 2.0)
+            center_y = float((y1 + y2) / 2.0)
+            bbox.center.position.x = center_x
+            bbox.center.position.y = center_y
             bbox.size_x = float(x2 - x1)
             bbox.size_y = float(y2 - y1)
+
+            offset_x = center_x - (image_width / 2.0)
+            offset_y = (image_height / 2.0) - center_y
+            norm_x = offset_x / image_width
+            norm_y = offset_y / image_height
+            azimuth = norm_x * self.hfov
+            elevation = norm_y * self.vfov
 
             hypothesis = ObjectHypothesis()
             hypothesis.class_id = str(self.classes[class_ids[i]])
             hypothesis.score = float(confidences[i])
+
             result = ObjectHypothesisWithPose()
             result.hypothesis = hypothesis
+            result.pose.pose.position.x = azimuth # degrees
+            result.pose.pose.position.y = elevation # degrees
             
             detection = Detection2D() 
             detection.bbox = bbox
@@ -324,11 +339,13 @@ def main(args=None):
     parser = argparse.ArgumentParser(description="YOLOv8 ROS2 Inference Node.")
     parser.add_argument('--headless', action='store_true', help="Run in headless mode.")
     parser.add_argument('--hitl', action='store_true', help="Open camerafrom gz-sim for HITL.")
+    parser.add_argument('--hfov', type=float, default=90.0, help="Horizontal field of view in degrees.")
+    parser.add_argument('--vfov', type=float, default=60.0, help="Vertical field of view in degrees.")
     cli_args, ros_args = parser.parse_known_args()
 
     rclpy.init(args=ros_args)
 
-    yolo_node = YoloInferenceNode(headless=cli_args.headless, hitl=cli_args.hitl)
+    yolo_node = YoloInferenceNode(headless=cli_args.headless, hitl=cli_args.hitl, hfov=cli_args.hfov, vfov=cli_args.vfov)
     yolo_node.run_inference_loop()
     
     yolo_node.destroy_node()

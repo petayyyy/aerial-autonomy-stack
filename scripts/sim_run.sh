@@ -191,7 +191,7 @@ if [[ "$HITL" == "false" ]]; then
 
   if [[ "$GND_CONTAINER" == "true" ]]; then
     # Finally, connect ground and aircraft containers to the air network
-    sleep 1
+    sleep 2
     docker network connect --ip=${AIR_SUBNET}.90.$GROUND_ID aas-air-network ground-container
     for i in $(seq 1 $((NUM_QUADS + NUM_VTOLS))); do
       docker network connect --ip=${AIR_SUBNET}.90.$i aas-air-network aircraft-container_$i

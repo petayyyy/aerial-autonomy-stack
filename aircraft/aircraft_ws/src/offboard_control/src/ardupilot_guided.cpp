@@ -253,8 +253,12 @@ void ArdupilotGuided::ardupilot_interface_printout_callback()
             ss << "YOLO Detections:\n";
             for (const auto& detection : local_detections->detections) {
                 for (const auto& result : detection.results) {
+                    double azimuth = result.pose.pose.position.x; // Computed in yolo_inference_node.py
+                    double elevation = result.pose.pose.position.y;
                     ss << "  Label: " << result.hypothesis.class_id
-                    << " - conf: " << std::fixed << std::setprecision(2) << result.hypothesis.score << "\n";
+                    << " - conf: " << std::fixed << std::setprecision(2) << result.hypothesis.score
+                    << " - az: " << std::setprecision(1) << azimuth << "°"
+                    << " - el: " << elevation << "°\n";
                 }
             }
         }
