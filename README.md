@@ -97,7 +97,7 @@ Check the flight logs in the `Simulation`'s Xterm terminal:
 
 > [!IMPORTANT]
 > <details>
-> <summary>Familiarize with Tmux (and Docker) shortcuts to navigate the windows/panes in Xterm <i>(click to expand)</i></summary>
+> <summary>Familiarize with <b>Tmux (and Docker) shortcuts</b> to navigate the windows/panes in Xterm <i>(click to expand)</i></summary>
 >
 > Tmux cheatsheet:
 > ```sh
@@ -131,7 +131,7 @@ Check the flight logs in the `Simulation`'s Xterm terminal:
 
 To create a new mission, read the banner comments in [`ardupilot_interface.hpp`](/aircraft/aircraft_ws/src/autopilot_interface/src/ardupilot_interface.hpp) and [`px4_interface.hpp`](/aircraft/aircraft_ws/src/autopilot_interface/src/px4_interface.hpp) for command line examples of takeoff, orbit, reposition, offboard, land; once flown from CLI, implemented your mission in [`MissionNode.conops_callback()`](/aircraft/aircraft_ws/src/mission/mission/mission_node.py)
 
-Available `WORLD`s:
+Available `WORLD` s:
 - `apple_orchard`, a GIS world created using [BlenderGIS](https://github.com/domlysz/BlenderGIS)
 - `impalpable_greyness`, (default) an empty world with simple shapes
 - `shibuya_crossing`, a 3D world adapted from [cgtrader](https://www.cgtrader.com/)
