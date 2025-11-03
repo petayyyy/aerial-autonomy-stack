@@ -11,7 +11,7 @@ https://github.com/user-attachments/assets/c194ada6-2996-4bfa-99e9-32b45e29281d
 ## Features
 
 - Support for **multiple quadrotors and VTOLs** based on either **PX4 or ArduPilot**
-- Vehicle-agnostic **ROS2** action-based autopilot interface (*via* XRCE-DDS and MAVROS)
+- Vehicle-agnostic **ROS2 action**-based autopilot interface (*via* XRCE-DDS or MAVROS)
 - Support for **YOLOv8** (with ONNX GPU Runtimes) and **LiDAR Odometry** (with [KISS-ICP](https://github.com/PRBonn/kiss-icp))
 
 <details>
@@ -39,7 +39,7 @@ https://github.com/user-attachments/assets/c194ada6-2996-4bfa-99e9-32b45e29281d
 
 </details>
 
-Read about the [*rationale*](/supplementary/RATIONALE.md) for AAS in the [`supplementary/`](/supplementary/) material
+A (i) list of related works and (ii) the motivation for AAS can be found in [`RATIONALE.md`](/supplementary/RATIONALE.md)
 
 ---
 
@@ -85,6 +85,56 @@ AUTOPILOT=px4 NUM_QUADS=1 NUM_VTOLS=1 WORLD=swiss_town ./sim_run.sh    # Start a
 > [!NOTE]
 > On a low-mid range laptop—i7-11 with 16GB RAM and RTX 3060—AAS simulates three PX4 quads with camera and LiDAR at 99% real-time-factor (note that ArduPilot faster physics updates and more complex worlds have higher computational demands). Make sure you run `sudo prime-select nvidia` and rebooted to effectively leverage GPU compute.
 
+### Fly a Mission
+
+In one of the `QUAD` or `VTOL` Xterm terminals:
+```sh
+ros2 run mission mission --ros-args -r __ns:=/Drone$DRONE_ID -p use_sim_time:=true        # This mission is a simple takeoff, followed by an orbit, and landing for any vehicle
+```
+
+Finally, in the `Simulation`'s Xterm terminal:
+```sh
+/aas/simulation_resources/patches/plot_logs.sh                         # Analyze the flight logs at http://10.42.90.100:5006/browse or in MAVExplorer
+```
+
+> [!TIP]
+> <details>
+> <summary>Familiarize with Tmux (and Docker) shortcuts to navigate panes in Xterm <i>(click to expand)</i></summary>
+>
+> Tmux cheatsheet:
+> ```sh
+> Ctrl + b, then n, p         # Move between Tmux windows 
+> Ctrl + b, then [arrow keys] # Move between Tmux panes
+> Ctrl + [, then [arrow keys] # Enter copy mode (select, scroll back)
+> q                           # Exit copy mode
+> Ctrl + b, then "            # Split a Tmux window horizontally
+> Ctrl + b, then %            # Split a Tmux window vertically
+> Ctrl + b, then d            # Detach Tmux
+> ```
+> ```sh
+> tmux list-sessions                    # List all sessions
+> tmux attach-session -t [session_name] # Reattach a session
+> tmux kill-session -t [session_name]   # Kill a session
+> tmux kill-server                      # Kill all sessions
+> ```
+> Docker hygiene:
+> ```sh
+> docker ps -a                          # List containers
+> docker stop $(docker ps -q)           # Stop all containers
+> docker container prune                # Remove all stopped containers
+> ```
+> ```sh
+> docker images                         # List images
+> docker image prune                    # Remove untagged images
+> docker rmi <image_name_or_id>         # Remove a specific image
+> docker builder prune                  # Clear the cache system-wide
+> ```
+> </details>
+
+To create a new mission, read the banner comments in [`ardupilot_interface.hpp`](/aircraft/aircraft_ws/src/autopilot_interface/src/ardupilot_interface.hpp) and [`px4_interface.hpp`](/aircraft/aircraft_ws/src/autopilot_interface/src/px4_interface.hpp) for command line examples of takeoff, orbit, reposition, offboard, land
+
+Once flown from CLI, implemented your mission in [`MissionNode.conops_callback()`](/aircraft/aircraft_ws/src/mission/mission/mission_node.py)
+
 Available `WORLD`s:
 - `apple_orchard`, a GIS world created using [BlenderGIS](https://github.com/domlysz/BlenderGIS)
 - `impalpable_greyness`, (default) an empty world with simple shapes
@@ -115,65 +165,7 @@ docker exec simulation-container bash -c " \
   -p 'enable_wind: false'"                                             # Disable WindEffects
 ```
 
-### Fly a Mission
-
-On the host computer:
-```sh
-cd ~/git/aerial-autonomy-stack/scripts
-AUTOPILOT=px4 NUM_QUADS=1 ./sim_run.sh                                 # Or `ardupilot`, or `NUM_VTOLS=1`
-```
-
-In aircraft 1's Xterm terminal:
-```sh
-ros2 run mission mission --ros-args -r __ns:=/Drone$DRONE_ID -p use_sim_time:=true        # This mission is a simple takeoff, followed by an orbit, and landing for any vehicle
-```
-
-Finally, in the simulation's Xterm terminal:
-```sh
-/aas/simulation_resources/patches/plot_logs.sh                         # Analyze the flight logs at http://10.42.90.100:5006/browse or in MAVExplorer
-```
-
-To create a new mission, read the banner comments in [`ardupilot_interface.hpp`](/aircraft/aircraft_ws/src/autopilot_interface/src/ardupilot_interface.hpp) and [`px4_interface.hpp`](/aircraft/aircraft_ws/src/autopilot_interface/src/px4_interface.hpp) for command line examples of takeoff, orbit, reposition, offboard, land
-
-Once flown from CLI, implemented your mission in [`MissionNode.conops_callback()`](/aircraft/aircraft_ws/src/mission/mission/mission_node.py)
-
 > [!TIP]
-> <details>
-> <summary><b>Development within Live Containers</b> <i>(click to expand)</i></summary>
-> 
-> Launching the `sim_run.sh` script with `DEV=true`, does **not** start the simulation and mounts folders `[aircraft|ground|simulation]_resources`, `[aircraft|ground]_ws/src` as volumes to more easily track, commit, push changes while building and testing them within the containers:
-> 
-> ```sh
-> cd ~/git/aerial-autonomy-stack/scripts
-> DEV=true ./sim_run.sh                               # Starts one simulation-image, one ground-image, and one aircraft-image where the *_resources/ and *_ws/src/ folders are mounted from the host
-> ```
-> 
-> To make changes **on the host** and build them **in the aircraft and/or ground container**:
-> 
-> ```sh
-> cd /aas/aircraft_ws/                                # Or cd /aas/ground_ws/
-> colcon build --symlink-install
-> ```
-> 
-> To start the simulation, in the aircraft Xterm terminal:
-> 
-> ```sh
-> tmuxinator start -p /aas/aircraft.yml.erb
-> ```
-> 
-> In the ground Xterm terminal:
-> ```sh
-> tmuxinator start -p /aas/ground.yml.erb
-> ```
-> 
-> In the simulation Xterm terminal:
-> ```sh
-> tmuxinator start -p /aas/simulation.yml.erb
-> ```
-> 
-> Once done, detach Tmux with `Ctrl + b`, then `d`; kill everything with `tmux kill-server && pkill -f gz`
-> </details>
->
 > <details>
 > <summary>AAS Structure <i>(click to expand)</i></summary>
 > 
@@ -227,38 +219,41 @@ Once flown from CLI, implemented your mission in [`MissionNode.conops_callback()
 >     └── simulation.yml.erb           # Simulation docker tmux entrypoint
 > ```
 > </details>
-> 
+>
 > <details>
-> <summary>Tmux and Docker Shortcuts <i>(click to expand)</i></summary>
+> <summary><b>Development within Live Containers</b> <i>(click to expand)</i></summary>
 > 
-> Tmux cheatsheet:
+> Launching the `sim_run.sh` script with `DEV=true`, does **not** start the simulation and mounts folders `[aircraft|ground|simulation]_resources`, `[aircraft|ground]_ws/src` as volumes to more easily track, commit, push changes while building and testing them within the containers:
+> 
 > ```sh
-> Ctrl + b, then n, p         # Move between Tmux windows 
-> Ctrl + b, then [arrow keys] # Move between Tmux panes
-> Ctrl + [, then [arrow keys] # Enter copy mode (select, scroll back)
-> q                           # Exit copy mode
-> Ctrl + b, then "            # Split a Tmux window horizontally
-> Ctrl + b, then %            # Split a Tmux window vertically
-> Ctrl + b, then d            # Detach Tmux
+> cd ~/git/aerial-autonomy-stack/scripts
+> DEV=true ./sim_run.sh                               # Starts one simulation-image, one ground-image, and one aircraft-image where the *_resources/ and *_ws/src/ folders are mounted from the host
 > ```
+> 
+> To make changes **on the host** and build them **in the aircraft and/or ground container**:
+> 
 > ```sh
-> tmux list-sessions                    # List all sessions
-> tmux attach-session -t [session_name] # Reattach a session
-> tmux kill-session -t [session_name]   # Kill a session
-> tmux kill-server                      # Kill all sessions
+> cd /aas/aircraft_ws/                                # Or cd /aas/ground_ws/
+> colcon build --symlink-install
 > ```
-> Docker hygiene:
+> 
+> To start the simulation, in the aircraft Xterm terminal:
+> 
 > ```sh
-> docker ps -a                          # List containers
-> docker stop $(docker ps -q)           # Stop all containers
-> docker container prune                # Remove all stopped containers
+> tmuxinator start -p /aas/aircraft.yml.erb
 > ```
+> 
+> In the ground Xterm terminal:
 > ```sh
-> docker images                         # List images
-> docker image prune                    # Remove untagged images
-> docker rmi <image_name_or_id>         # Remove a specific image
-> docker builder prune                  # Clear the cache system-wide
+> tmuxinator start -p /aas/ground.yml.erb
 > ```
+> 
+> In the simulation Xterm terminal:
+> ```sh
+> tmuxinator start -p /aas/simulation.yml.erb
+> ```
+> 
+> Once done, detach Tmux with `Ctrl + b`, then `d`; kill all with `tmux kill-server && pkill -f gz`
 > </details>
 
 ---
