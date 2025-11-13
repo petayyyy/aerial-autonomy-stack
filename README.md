@@ -286,7 +286,7 @@ DRONE_TYPE=quad AUTOPILOT=px4 DRONE_ID=1 CAMERA=true LIDAR=false ./deploy_run.sh
 ### HITL Simulation
 
 > [!NOTE]
-> Currently, HITL covers the Jetson compute and the inter-vehicle network, support for Pixhawk is work-in-progress
+> Currently, HITL covers the Jetson compute and the inter-vehicle network, support for Pixhawk is WIP
 >
 > Use USB2.0 ASIX Ethernet adapters to add multiple network interfaces to the Jetson baseboards
 
@@ -325,7 +325,7 @@ HITL=true NUM_QUADS=2 SIM_SUBNET=172.30 AIR_SUBNET=10.223 ./sim_run.sh
 ```
 
 > [!NOTE]
-> Running all the previous Jetson and simulation computer commands with `GND_CONTAINER=false` forces the Zenoh bridge over the `SIM_SUBNET` instead, removing the need for the `AIR_SUBNET` and the ground computer with IP ending in `90.101`
+> Running the previous (except the 3rd) commands with `GND_CONTAINER=false` forces the Zenoh bridge over the `SIM_SUBNET`, removing the need for the `AIR_SUBNET` and the computer with IP ending in `90.101`
 
 Once done, detach Tmux (and remove the containers) with `Ctrl + b`, then `d`
 
