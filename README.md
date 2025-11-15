@@ -127,6 +127,11 @@ Check the flight logs in the `Simulation`'s Xterm terminal:
 > docker rmi <image_name_or_id>         # Remove a specific image
 > docker builder prune                  # Clear the cache system-wide
 > ```
+> ```sh
+> docker network ls                     # List docker networks
+> docker network rm <network_name>      # Remove a specific network
+> docker network prune -f               # Remove all unused networks
+> ```
 > </details>
 
 To create a new mission, read the banner comments in [`ardupilot_interface.hpp`](/aircraft/aircraft_ws/src/autopilot_interface/src/ardupilot_interface.hpp) and [`px4_interface.hpp`](/aircraft/aircraft_ws/src/autopilot_interface/src/px4_interface.hpp) for command line examples of takeoff, orbit, reposition, offboard, land; once flown from CLI, implemented your mission in [`MissionNode.conops_callback()`](/aircraft/aircraft_ws/src/mission/mission/mission_node.py)
@@ -139,26 +144,17 @@ Available `WORLD`s:
 
 ![worlds](https://github.com/user-attachments/assets/45a2f2ad-cc31-4d71-aa2e-4fe542a59a77)
 
-To advance the simulation in **discrete time steps**, e.g. 1s, from a terminal on the host, run:
+To advance the simulation in **discrete time steps**, e.g. 2s, in the `Simulation`'s Xterm terminal:
 
 ```sh
-docker exec simulation-container bash -c " \
-  gz service -s /world/\$WORLD/control --reqtype gz.msgs.WorldControl --reptype gz.msgs.Boolean \
-  --req 'multi_step: 250, pause: true'"                                                       # Adjust multi_step based on the value of max_step_size in the world's .sdf (defaults: 250 for PX4, 1000 for ArduPilot)
+python3 /aas/simulation_resources/scripts/gz_step.py --step_sec 3.0
 ```
 
-To add or disable [**wind effects**](https://github.com/gazebosim/gz-sim/blob/gz-sim10/examples/worlds/wind.sdf), from a terminal on the host, run:
+To add or disable [**wind effects**](https://github.com/gazebosim/gz-sim/blob/gz-sim10/examples/worlds/wind.sdf), in the `Simulation`'s Xterm terminal:
 
 ```sh
-docker exec simulation-container bash -c " \
-  gz topic -t /world/\$WORLD/wind/ -m gz.msgs.Wind \
-  -p 'linear_velocity: {x: 0.0 y: 3.0}, enable_wind: true'"                                   # Positive X blows from the West, positive Y blows from the South
-```
-
-```sh
-docker exec simulation-container bash -c " \
-  gz topic -t /world/\$WORLD/wind/ -m gz.msgs.Wind \
-  -p 'enable_wind: false'"                                                                    # Disable WindEffects
+python3 /aas/simulation_resources/scripts/gz_wind.py --from_west 0.0 --from_south 3.0
+python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 ```
 
 > [!TIP]
