@@ -8,15 +8,12 @@
 
 https://github.com/user-attachments/assets/c194ada6-2996-4bfa-99e9-32b45e29281d
 
-## Features
+<details>
+<summary><b>Feature list</b> <i>(click to expand)</i></summary>
 
 - Support for **multiple quadrotors and VTOLs** based on either **PX4 or ArduPilot**
 - Vehicle-agnostic **ROS2 action**-based autopilot interface (*via* XRCE-DDS or MAVROS)
 - Support for **YOLOv8** (with ONNX GPU Runtimes) and **LiDAR Odometry** (with [KISS-ICP](https://github.com/PRBonn/kiss-icp))
-
-<details>
-<summary>Additional features: <i>(click to expand)</i></summary>
-
 - **Dockerized simulation** based on [`nvcr.io/nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04`](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/cuda/tags)
 - **Dockerized deployment** based on [`nvcr.io/nvidia/l4t-jetpack:r36.4.0`](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-jetpack/tags)
 - **Windows 11 compatibility** with GPU support *via* WSLg
@@ -29,13 +26,6 @@ https://github.com/user-attachments/assets/c194ada6-2996-4bfa-99e9-32b45e29281d
 - Logs analysis with [`flight_review`](https://github.com/PX4/flight_review) (`.ulg`), MAVExplorer (`.bin`), and [PlotJuggler](https://github.com/facontidavide/PlotJuggler) (`rosbag`)
 - Support for Gazebo's **wind effects** plugin
 - **Steppable simulation**
-
-</details>
-
-<details>
-<summary>AAS leverages the following frameworks: <i>(click to expand)</i></summary>
-
-> [*Ubuntu 22.04*](https://ubuntu.com/about/release-cycle) (LTS, ESM 4/2032), [*`nvidia-driver-580`*](https://developer.nvidia.com/datacenter-driver-archive) (latest as of 9/2025), [*Docker Engine v28*](https://docs.docker.com/engine/release-notes/28/), [*NVIDIA Container Toolkit 1.18*](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/index.html) (latest as of 11/2025), [*ROS2 Humble*](https://docs.ros.org/en/rolling/Releases.html) (LTS, EOL 5/2027), [*Gazebo Sim Harmonic*](https://gazebosim.org/docs/latest/releases/) (LTS, EOL 9/2028), [*PX4 1.16*](https://github.com/PX4/PX4-Autopilot/releases) interfaced *via* [XRCE-DDS](https://github.com/eProsima/Micro-XRCE-DDS/releases), [*ArduPilot 4.6*](https://github.com/ArduPilot/ardupilot/releases) interfaced *via* [MAVROS](https://github.com/mavlink/mavros/releases), [*YOLOv8*](https://github.com/ultralytics/ultralytics/releases) on [*ONNX Runtime 1.22*](https://onnxruntime.ai/getting-started) (latest stable releases as of 8/2025), [*L4T 36* (Ubuntu 22-based)/*JetPack 6*](https://developer.nvidia.com/embedded/jetpack-archive) (for deployment only, latest major release as of 8/2025), [WSLg](https://learn.microsoft.com/en-us/windows/wsl/tutorials/gui-apps) (for simulation and development on Windows 11 only)
 
 </details>
 
@@ -73,17 +63,17 @@ cd ~/git/aerial-autonomy-stack/scripts
 
 ## "How-to" Part 2: Simulation and Development
 
-```sh
-cd ~/git/aerial-autonomy-stack/scripts
-AUTOPILOT=px4 NUM_QUADS=1 NUM_VTOLS=1 WORLD=swiss_town ./sim_run.sh                           # Start a simulation, check the script for more options (note: ArduPilot SITL takes ~40s to be ready to arm)
-```
-
 ![interface](https://github.com/user-attachments/assets/71b07851-42dd-45d4-a9f5-6b5b00cd85bc)
 
 > [!NOTE]
 > On a low-mid range laptop—i7-11 with 16GB RAM and RTX 3060—AAS simulates three PX4 quads with camera and LiDAR at **99% real-time-factor** (note that ArduPilot faster physics updates and more complex worlds have higher computational demands). Make sure you run `sudo prime-select nvidia` and rebooted to effectively leverage GPU compute.
 
 ### Fly a Mission
+
+```sh
+cd ~/git/aerial-autonomy-stack/scripts
+AUTOPILOT=px4 NUM_QUADS=1 NUM_VTOLS=1 WORLD=swiss_town ./sim_run.sh                           # Start a simulation, check the script for more options (note: ArduPilot SITL takes ~40s to be ready to arm)
+```
 
 In any of the `QUAD` or `VTOL` Xterm terminals:
 ```sh
@@ -93,6 +83,21 @@ ros2 run mission mission --ros-args -r __ns:=/Drone$DRONE_ID -p use_sim_time:=tr
 Check the flight logs in the `Simulation`'s Xterm terminal:
 ```sh
 /aas/simulation_resources/scripts/plot_logs.sh                                                # Analyze the flight logs at http://10.42.90.100:5006/browse or in MAVExplorer
+```
+
+To advance the simulation in **discrete time steps**, e.g. 2s, in the `Simulation`'s Xterm terminal:
+
+```sh
+python3 /aas/simulation_resources/scripts/gz_step.py --step_sec 2.0
+```
+
+To add or disable [**wind effects**](https://github.com/gazebosim/gz-sim/blob/gz-sim10/examples/worlds/wind.sdf), in the `Simulation`'s Xterm terminal:
+
+```sh
+python3 /aas/simulation_resources/scripts/gz_wind.py --from_west 0.0 --from_south 3.0
+```
+```sh
+python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 ```
 
 > [!TIP]
@@ -136,26 +141,13 @@ Check the flight logs in the `Simulation`'s Xterm terminal:
 
 To create a new mission, read the banner comments in [`ardupilot_interface.hpp`](/aircraft/aircraft_ws/src/autopilot_interface/src/ardupilot_interface.hpp) and [`px4_interface.hpp`](/aircraft/aircraft_ws/src/autopilot_interface/src/px4_interface.hpp) for command line examples of takeoff, orbit, reposition, offboard, land; once flown from CLI, implemented your mission in [`MissionNode.conops_callback()`](/aircraft/aircraft_ws/src/mission/mission/mission_node.py)
 
+![worlds](https://github.com/user-attachments/assets/45a2f2ad-cc31-4d71-aa2e-4fe542a59a77)
+
 Available `WORLD`s:
 - `apple_orchard`, a GIS world created using [BlenderGIS](https://github.com/domlysz/BlenderGIS)
 - `impalpable_greyness`, (default) an empty world with simple shapes
 - `shibuya_crossing`, a 3D world adapted from [cgtrader](https://www.cgtrader.com/)
 - `swiss_town`, a photogrammetry world courtesy of [Pix4D / pix4d.com](https://support.pix4d.com/hc/en-us/articles/360000235126)
-
-![worlds](https://github.com/user-attachments/assets/45a2f2ad-cc31-4d71-aa2e-4fe542a59a77)
-
-To advance the simulation in **discrete time steps**, e.g. 2s, in the `Simulation`'s Xterm terminal:
-
-```sh
-python3 /aas/simulation_resources/scripts/gz_step.py --step_sec 3.0
-```
-
-To add or disable [**wind effects**](https://github.com/gazebosim/gz-sim/blob/gz-sim10/examples/worlds/wind.sdf), in the `Simulation`'s Xterm terminal:
-
-```sh
-python3 /aas/simulation_resources/scripts/gz_wind.py --from_west 0.0 --from_south 3.0
-python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
-```
 
 > [!TIP]
 > <details>
@@ -185,12 +177,13 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 > ├── scripts
 > │   ├── docker
 > │   │   ├── Dockerfile.aircraft                     # Docker image for aircraft simulation and deployment
+> │   │   ├── Dockerfile.ground                       # Docker image for ground system simulation and deployment
 > │   │   └── Dockerfile.simulation                   # Docker image for SITL and HITL simulation
 > │   │
 > │   ├── deploy_build.sh                             # Build `Dockerfile.aircraft` for arm64/Orin
-> │   ├── deploy_run.sh                               # Start the aircraft docker on arm64/Orin (deploy or HITL)
+> │   ├── deploy_run.sh                               # Start the aircraft docker on arm64/Orin or the ground docker on amd64 (deploy or HITL)
 > │   │
-> │   ├── sim_build.sh                                # Build both dockerfiles for amd64/simulation
+> │   ├── sim_build.sh                                # Build all dockerfiles for amd64/simulation
 > │   └── sim_run.sh                                  # Start the simulation (SITL or HITL)
 > │
 > └── simulation
@@ -222,25 +215,25 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 > DEV=true ./sim_run.sh                                                                       # Starts one simulation-image, one ground-image, and one aircraft-image where the *_resources/ and *_ws/src/ folders are mounted from the host
 > ```
 > 
-> To make changes **on the host** and build them **in the aircraft and/or ground container**:
+> To build changes—**made on the host**—in the `Ground` or `QUAD` Xterm terminal:
 > 
 > ```sh
 > cd /aas/aircraft_ws/                                                                        # Or cd /aas/ground_ws/
 > colcon build --symlink-install
 > ```
 > 
-> To start the simulation, in the aircraft Xterm terminal:
+> To start the simulation, in the `QUAD` Xterm terminal:
 > 
 > ```sh
 > tmuxinator start -p /aas/aircraft.yml.erb
 > ```
 > 
-> In the ground Xterm terminal:
+> In the `Ground` Xterm terminal:
 > ```sh
 > tmuxinator start -p /aas/ground.yml.erb
 > ```
 > 
-> In the simulation Xterm terminal:
+> In the `Simulation` Xterm terminal:
 > ```sh
 > tmuxinator start -p /aas/simulation.yml.erb
 > ```
@@ -279,7 +272,8 @@ DRONE_TYPE=quad AUTOPILOT=px4 DRONE_ID=1 CAMERA=true LIDAR=false ./deploy_run.sh
 > [!WARNING]
 > The 1st run of `./deploy_run.sh` requires ~3-4' to build the TensorRT cache
 
-### HITL Simulation
+<details>
+<summary><b>HITL Simulation</b> <i>(click to expand)</i></summary>
 
 > [!NOTE]
 > Currently, HITL covers the Jetson compute and the inter-vehicle network, support for Pixhawk is WIP
@@ -325,6 +319,8 @@ HITL=true GROUND=true HEADLESS=false NUM_QUADS=2 SIM_SUBNET=172.30 AIR_SUBNET=10
 
 Once done, detach Tmux (and remove the containers) with `Ctrl + b`, then `d`
 
+</details>
+
 ---
 > You've done a man's job, sir. I guess you're through, huh?
 
@@ -341,9 +337,19 @@ Once done, detach Tmux (and remove the containers) with `Ctrl + b`, then `d`
 - Command 178 MAV_CMD_DO_CHANGE_SPEED is accepted but not effective in changing speed for ArduPilot VTOL
 - ArduPilot SITL for Iris uses option -f that also sets "external": True, this is not the case for the Alti Transition from ArduPilot/SITL_Models 
 - In ArdupilotInterface's action callbacks, std::shared_lock<std::shared_mutex> lock(node_data_mutex_); could be used on the reads of lat_, lon_, alt_
-- In yolo_inference_node.py, cannot open GPU accelerated (nvh264dec) GStreamer pipeline with cv2.VideoCapture, might need to recompile OpenCV to have both CUDA and GStreamer support (or use python3-gi gir1.2-gst-plugins-base-1.0 gir1.2-gstreamer-1.0 and circumvent OpenCV)
 - QGC does not save roll and pitch in the telemetry bar for PX4 VTOLs (MAV_TYPE 22)
 - PX4 quad max tilt is limited by the anti-windup gain (zero it to deactivate it): const float arw_gain = 2.f / _gain_vel_p(0);
+
+-->
+
+<!--
+
+<details>
+<summary>Dependencies <i>(click to expand)</i></summary>
+
+> [*Ubuntu 22.04*](https://ubuntu.com/about/release-cycle) (LTS, ESM 4/2032), [*`nvidia-driver-580`*](https://developer.nvidia.com/datacenter-driver-archive) (latest as of 9/2025), [*Docker Engine v28*](https://docs.docker.com/engine/release-notes/28/), [*NVIDIA Container Toolkit 1.18*](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/index.html) (latest as of 11/2025), [*ROS2 Humble*](https://docs.ros.org/en/rolling/Releases.html) (LTS, EOL 5/2027), [*Gazebo Sim Harmonic*](https://gazebosim.org/docs/latest/releases/) (LTS, EOL 9/2028), [*PX4 1.16*](https://github.com/PX4/PX4-Autopilot/releases) interfaced *via* [XRCE-DDS](https://github.com/eProsima/Micro-XRCE-DDS/releases), [*ArduPilot 4.6*](https://github.com/ArduPilot/ardupilot/releases) interfaced *via* [MAVROS](https://github.com/mavlink/mavros/releases), [*YOLOv8*](https://github.com/ultralytics/ultralytics/releases) on [*ONNX Runtime 1.22*](https://onnxruntime.ai/getting-started) (latest stable releases as of 8/2025), [*L4T 36* (Ubuntu 22-based)/*JetPack 6*](https://developer.nvidia.com/embedded/jetpack-archive) (for deployment only, latest major release as of 8/2025), [WSLg](https://learn.microsoft.com/en-us/windows/wsl/tutorials/gui-apps) (for simulation and development on Windows 11 only)
+
+</details>
 
 -->
 

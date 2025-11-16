@@ -1,12 +1,14 @@
+"""
+Use as:
+    python3 gz_wind.py --from_west 0.0 --from_south 3.0
+    python3 gz_wind.py --stop_wind
+"""
 import os
 import time
 import argparse
 import gz.transport13
 from gz.msgs10.wind_pb2 import Wind
 
-# Use as: 
-#   python3 gz_wind.py --from_west 0.0 --from_south 3.0
-#   python3 gz_wind.py --stop_wind
 
 def main():
     parser = argparse.ArgumentParser(description='Control Gazebo wind plugin')

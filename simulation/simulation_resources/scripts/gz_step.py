@@ -1,11 +1,13 @@
+"""
+Use as:
+    python3 gz_step.py --step_sec 1.0
+"""
 import os
 import argparse
 import gz.transport13
 from gz.msgs10.world_control_pb2 import WorldControl
 from gz.msgs10.boolean_pb2 import Boolean as GzBoolean
 
-# Use as: 
-#   python3 gz_step.py --step_sec 1.0
 
 def main():
     parser = argparse.ArgumentParser(description='Control Gazebo world simulation stepping')
