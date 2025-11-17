@@ -25,7 +25,7 @@ https://github.com/user-attachments/assets/c194ada6-2996-4bfa-99e9-32b45e29281d
 - Support for [ArduPilot Guided](https://ardupilot.org/copter/docs/ac2_guidedmode.html) mode (i.e. `setpoint_velocity`, `setpoint_accel` references)
 - Logs analysis with [`flight_review`](https://github.com/PX4/flight_review) (`.ulg`), MAVExplorer (`.bin`), and [PlotJuggler](https://github.com/facontidavide/PlotJuggler) (`rosbag`)
 - Support for Gazebo's **wind effects** plugin
-- **Steppable simulation**
+- **Steppable and faster-than-real-time simulation**
 
 </details>
 
