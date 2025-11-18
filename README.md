@@ -25,7 +25,7 @@ https://github.com/user-attachments/assets/c194ada6-2996-4bfa-99e9-32b45e29281d
 - Support for [ArduPilot Guided](https://ardupilot.org/copter/docs/ac2_guidedmode.html) mode (i.e. `setpoint_velocity`, `setpoint_accel` references)
 - Logs analysis with [`flight_review`](https://github.com/PX4/flight_review) (`.ulg`), MAVExplorer (`.bin`), and [PlotJuggler](https://github.com/facontidavide/PlotJuggler) (`rosbag`)
 - Support for Gazebo's **wind effects** plugin
-- **Steppable and faster-than-real-time simulation**
+- **Steppable** and **faster-than-real-time** simulation
 
 </details>
 
@@ -101,9 +101,8 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 
 > [!TIP]
 > <details>
-> <summary>Familiarize with <b>Tmux (and Docker) shortcuts</b> to navigate the windows/panes in Xterm <i>(click to expand)</i></summary>
+> <summary>Familiarize with <b>Tmux shortcuts</b> to navigate the windows/panes in Xterm <i>(click to expand)</i></summary>
 >
-> Tmux cheatsheet:
 > ```sh
 > Ctrl + b, then n, p                   # Move between Tmux windows 
 > Ctrl + b, then [arrow keys]           # Move between Tmux panes in a window
@@ -119,22 +118,25 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 > tmux kill-session -t [session_name]   # Kill a session
 > tmux kill-server                      # Kill all sessions
 > ```
-> Docker hygiene:
+> </details>
+> <details>
+> <summary>Familiarize with <b>Docker cleanup</b> commands <i>(click to expand)</i></summary>
+>
 > ```sh
 > docker ps -a                          # List containers
 > docker stop $(docker ps -q)           # Stop all containers
 > docker container prune -f             # Remove all stopped containers
 > ```
 > ```sh
+> docker network ls                     # List docker networks
+> docker network rm <network_name>      # Remove a specific network
+> docker network prune -f               # Remove all unused networks
+> ```
+> ```sh
 > docker images                         # List images
 > docker image prune                    # Remove untagged images
 > docker rmi <image_name_or_id>         # Remove a specific image
 > docker builder prune                  # Clear the cache system-wide
-> ```
-> ```sh
-> docker network ls                     # List docker networks
-> docker network rm <network_name>      # Remove a specific network
-> docker network prune -f               # Remove all unused networks
 > ```
 > </details>
 
