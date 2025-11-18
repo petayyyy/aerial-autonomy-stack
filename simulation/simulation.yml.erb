@@ -15,6 +15,7 @@
 
   simulated_time = ENV.fetch('SIMULATED_TIME', 'false') == 'true'
   as_fast_as_possible = ENV.fetch('AS_FAST_AS_POSSIBLE', 'false') == 'true'
+  start_as_paused = ENV.fetch('START_AS_PAUSED', 'false') == 'true'
 
   drones = []
   num_quads.times { |i| drones << { type: 'quad', index: i } }
@@ -51,7 +52,7 @@ windows:
           <% end %>
           GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:/aas/simulation_resources/aircraft_models:/aas/simulation_resources/simulation_worlds 
           GZ_SIM_PHYSICS_ENGINE_PATH=$GZ_SIM_PHYSICS_ENGINE_PATH:/usr/lib/x86_64-linux-gnu/gz-physics-7/engine-plugins/
-          gz sim -v4 -r <%= headless ? '-s' : '' %> <%= autopilot == 'px4' ? "#{world}.sdf" : "populated_ardupilot.sdf" %>
+          gz sim -v4 <%= start_as_paused ? '' : '-r' %> <%= headless ? '-s' : '' %> <%= autopilot == 'px4' ? "#{world}.sdf" : "populated_ardupilot.sdf" %>
         <% if gnd_container %>
         - "ROS_DOMAIN_ID=<%= ground_id %> ros2 run ros_gz_bridge parameter_bridge /clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"
         <% end %>
