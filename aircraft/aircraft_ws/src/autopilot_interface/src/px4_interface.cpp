@@ -42,12 +42,12 @@ PX4Interface::PX4Interface() : Node("px4_interface"),
     callback_group_action_ = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant); // Actions are parallel but refused if active_srv_or_act_flag_ is true
 
     // Timers
-    px4_interface_printout_timer_ = this->create_wall_timer(
+    px4_interface_printout_timer_ = this->create_wall_timer( // Follow wall clock for printouts
         3s, // Timer period of 3 seconds
         std::bind(&PX4Interface::px4_interface_printout_callback, this),
         callback_group_timer_
     );
-    offboard_flag_timer_ = this->create_wall_timer(
+    offboard_flag_timer_ = rclcpp::create_timer(this, this->get_clock(),
         std::chrono::nanoseconds(1000000000 / offboard_flag_frequency),
         std::bind(&PX4Interface::offboard_flag_callback, this),
         callback_group_timer_

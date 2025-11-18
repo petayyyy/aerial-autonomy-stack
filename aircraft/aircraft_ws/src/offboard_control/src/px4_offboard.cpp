@@ -40,12 +40,12 @@ PX4Offboard::PX4Offboard() : Node("px4_offboard"),
     callback_group_subscriber_ = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant); // Listen to subscribers in parallel
 
     // Timers
-    px4_interface_printout_timer_ = this->create_wall_timer(
+    px4_interface_printout_timer_ = this->create_wall_timer( // Follow wall clock for printouts
         3s, // Timer period of 3 seconds
         std::bind(&PX4Offboard::px4_interface_printout_callback, this),
         callback_group_timer_
     );
-    offboard_control_loop_timer_ = this->create_wall_timer(
+    offboard_control_loop_timer_ = rclcpp::create_timer(this, this->get_clock(),
         std::chrono::nanoseconds(1000000000 / offboard_loop_frequency),
         std::bind(&PX4Offboard::offboard_loop_callback, this),
         callback_group_timer_

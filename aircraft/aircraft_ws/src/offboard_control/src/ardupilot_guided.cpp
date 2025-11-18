@@ -37,12 +37,12 @@ ArdupilotGuided::ArdupilotGuided() : Node("ardupilot_guided"),
     callback_group_subscriber_ = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant); // Listen to subscribers in parallel
 
     // Timers
-    ardupilot_interface_printout_timer_ = this->create_wall_timer(
+    ardupilot_interface_printout_timer_ = this->create_wall_timer( // Follow wall clock for printouts
         3s, // Timer period of 3 seconds
         std::bind(&ArdupilotGuided::ardupilot_interface_printout_callback, this),
         callback_group_timer_
     );
-    offboard_control_loop_timer_ = this->create_wall_timer(
+    offboard_control_loop_timer_ = rclcpp::create_timer(this, this->get_clock(),
         std::chrono::nanoseconds(1000000000 / offboard_loop_frequency),
         std::bind(&ArdupilotGuided::offboard_loop_callback, this),
         callback_group_timer_
