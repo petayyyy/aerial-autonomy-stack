@@ -43,7 +43,7 @@ https://github.com/user-attachments/assets/c194ada6-2996-4bfa-99e9-32b45e29281d
 > Windows 11 support is available *via* WSLg, read [`REQUIREMENTS_WSL.md`](/supplementary/REQUIREMENTS_WSL.md)
 
 ```sh
-sudo apt update && sudo apt install -y git git-lfs xterm xfonts-base
+sudo apt update && sudo apt install -y git git-lfs xterm xfonts-base && git lfs install
 
 mkdir -p ~/git && cd ~/git
 git clone https://github.com/JacopoPan/aerial-autonomy-stack.git
