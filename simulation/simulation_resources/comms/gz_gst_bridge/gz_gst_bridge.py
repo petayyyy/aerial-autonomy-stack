@@ -1,3 +1,11 @@
+"""
+Alternative Python implementation of a Gazebo to GStreamer image bridge.
+
+Use as in simulation.yml.erb as:
+    python3 /aas/simulation_resources/comms/gz_gst_bridge/gz_gst_bridge.py 
+        --gz_topic /world/<%= world %>/model/<%= model_name %>/<%= sensor_path %>model/simple_camera/link/mono_cam/base_link/sensor/imager/image
+        --ip <%= "#{sim_subnet}.90.#{drone_id}" %> --port 5600
+"""
 import argparse
 import gi
 import signal

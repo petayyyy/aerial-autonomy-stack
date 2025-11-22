@@ -97,10 +97,10 @@ windows:
   <% end %>
         <% if camera %>
         - >
-          sleep <%= drone_id * 5 %> && 
-          python3 /aas/simulation_resources/comms/gz_to_gst_image_bridge.py 
-          --gz_topic /world/<%= world %>/model/<%= model_name %>/<%= sensor_path %>model/simple_camera/link/mono_cam/base_link/sensor/imager/image
-          --ip <%= "#{sim_subnet}.90.#{drone_id}" %> --port 5600
+          sleep <%= drone_id * 5 %> &&
+          /aas/simulation_resources/comms/gz_gst_bridge/build/gz_gst_bridge
+          /world/<%= world %>/model/<%= model_name %>/<%= sensor_path %>model/simple_camera/link/mono_cam/base_link/sensor/imager/image
+          <%= "#{sim_subnet}.90.#{drone_id}" %> 5600 10
         <% end %>
         <% if lidar %>
         - >

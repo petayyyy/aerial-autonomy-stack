@@ -92,7 +92,8 @@ RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/p
 RUN apt update \
     && apt install -y --no-install-recommends \
         gz-harmonic ros-humble-ros-gzharmonic \
-        libgz-transport13-* python3-gz-transport13 python3-gz-msgs10 \
+        libgz-transport13-* libgz-msgs10-dev \
+        python3-gz-transport13 python3-gz-msgs10 \
     && apt clean \
     && rm -rf /var/lib/apt/lists/*
 # Run with $ gz sim
@@ -226,6 +227,12 @@ RUN chmod +x /aas/simulation_resources/simulation_worlds/_create_ardupilot_world
 
 # Copy QGC configuration (only for GND_CONTAINER=false)
 COPY ground/ground_resources/patches/QGroundControl.ini /home/qgcuser/.config/QGroundControl/QGroundControl.ini
+
+# Build gz_gst_bridge
+WORKDIR /aas/simulation_resources/comms/gz_gst_bridge
+RUN mkdir build && cd build \
+    && cmake .. \
+    && make
 
 # Final config
 WORKDIR /aas
