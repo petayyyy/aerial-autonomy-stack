@@ -258,7 +258,9 @@ cd ~/git/aerial-autonomy-stack/scripts
 ./deploy_build.sh                                                                             # Build for arm64, on Jetson Orin NX the first build takes ~1h, mostly to build onnxruntime-gpu with TensorRT support from source
 ```
 
+<div align="right">
 [![aircraft-image arm64](https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/weekly-aircraft-arm64-build.yml/badge.svg)](https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/weekly-aircraft-arm64-build.yml) (re-built weekly)
+</div>
 
 Finally, start the `aircraft-image` on Jetson Orin NX
 
@@ -271,8 +273,7 @@ DRONE_TYPE=quad AUTOPILOT=px4 DRONE_ID=1 CAMERA=true LIDAR=false ./deploy_run.sh
 <details>
 <summary><b>HITL Simulation</b> <i>(click to expand)</i></summary>
 
-> **Note:** currently, HITL covers the Jetson compute and the inter-vehicle network, support for Pixhawk is WIP
->
+> **Note:** currently, HITL covers the Jetson compute and the inter-vehicle network, support for Pixhawk HITL is WIP. 
 > Use USB2.0 ASIX Ethernet adapters to add multiple network interfaces to the Jetson baseboards
 
 Set up a LAN on an arbitrary `SIM_SUBNET` with netmask `255.255.0.0` (e.g. `172.30.x.x`) between:
