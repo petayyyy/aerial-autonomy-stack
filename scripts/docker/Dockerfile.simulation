@@ -144,6 +144,10 @@ RUN mkdir build && cd build && \
     cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo && \
     make -j$(nproc)
 
+# Pre-build in the Docker image to speed up the first use of sim_vehicle.py
+RUN /aas/github_apps/ardupilot/Tools/autotest/sim_vehicle.py -v ArduCopter
+RUN /aas/github_apps/ardupilot/Tools/autotest/sim_vehicle.py -v ArduPlane
+
 ################################################################################
 # Temporary stage to filter airframes ##########################################
 ################################################################################

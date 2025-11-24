@@ -91,11 +91,12 @@ int main(int argc, char **argv) {
     std::string ip_port = "host=" + TARGET_IP + " port=" + std::to_string(TARGET_PORT);
     if (check_nvidia_encoder()) {
         std::cout << "Using NVIDIA GPU Encoder (nvh264enc)\n";
-        pipeline_str = "appsrc name=gz_source ! videoconvert ! nvh264enc preset=low-latency-hq zerolatency=true ! rtph264pay ! udpsink " + ip_port;
+        pipeline_str = "appsrc name=gz_source ! videoconvert ! nvh264enc preset=low-latency-hq zerolatency=true gop-size=60 ! rtph264pay config-interval=1 ! udpsink sync=false " + ip_port;
     } else {
         std::cout << "Using CPU Encoder (x264enc)\n";
-        pipeline_str = "appsrc name=gz_source ! videoconvert ! x264enc speed-preset=ultrafast tune=zerolatency bitrate=500 ! rtph264pay ! udpsink " + ip_port;
+        pipeline_str = "appsrc name=gz_source ! videoconvert ! x264enc speed-preset=ultrafast tune=zerolatency bitrate=500 key-int-max=60 ! rtph264pay config-interval=1 ! udpsink sync=false " + ip_port;
     }
+    // Note: re-send full frame every 60 frames
 
     // Launch Pipeline
     GError *error = nullptr;

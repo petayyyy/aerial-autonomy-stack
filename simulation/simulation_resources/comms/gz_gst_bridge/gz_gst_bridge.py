@@ -61,18 +61,18 @@ def main():
         pipeline_str = (
             "appsrc name=py_source ! "
             "videoconvert ! "
-            "nvh264enc preset=low-latency-hq zerolatency=true ! " # Use the NVIDIA H.264 encoder
-            "rtph264pay ! "
-            f"udpsink host={args.ip} port={args.port}"
+            "nvh264enc preset=low-latency-hq zerolatency=true gop-size=60 ! " # Use the NVIDIA H.264 encoder, re-send full frame every 60 frames
+            "rtph264pay config-interval=1 ! "
+            f"udpsink sync=false host={args.ip} port={args.port}"
         )
         print("Using GPU-accelerated GStreamer pipeline")
     else:
         pipeline_str = (
             "appsrc name=py_source ! "
             "videoconvert ! "
-            "x264enc speed-preset=ultrafast tune=zerolatency bitrate=500 ! " # Optimize CPU use
-            "rtph264pay ! "
-            f"udpsink host={args.ip} port={args.port}"
+            "x264enc speed-preset=ultrafast tune=zerolatency bitrate=500 key-int-max=60 ! " # Optimize CPU use, re-send full frame every 60 frames
+            "rtph264pay config-interval=1 ! "
+            f"udpsink sync=false host={args.ip} port={args.port}"
         )
         print("[WARNING] Falling back to CPU-based GStreamer pipeline")
 

@@ -100,7 +100,7 @@ windows:
           --out=udp:127.0.0.1:<%= 14550 + sitl_instance %>
           <% end %>
         <% if is_quad %>
-        - sleep <%= sitl_instance * 3.0 + 35.0 %> && tmux send-keys -t 'sim:ardupilot_sitl_<%= drone_id %>.0' 'rc 3 1500' C-m
+        - sleep <%= sitl_instance * 3.0 + 35.0 %> && tmux send-keys -t 'sim:ardu_sitl_<%= drone_id %>.0' 'rc 3 1500' C-m
         <% end %>
   <% end %>
         <% if camera %>
