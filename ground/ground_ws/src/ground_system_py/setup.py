@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'ground_system'
+package_name = 'ground_system_py'
 
 setup(
     name=package_name,
@@ -15,7 +15,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'oracle = ground_system.oracle:main',
+            'oracle = ground_system_py.oracle:main',
         ],
     },
 )
