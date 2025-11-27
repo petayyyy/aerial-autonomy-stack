@@ -21,7 +21,7 @@ sdkmanager                          # Log in with your https://developer.nvidia.
 - On the flash dialog after the download, choose "OEM Pre-config", username, password, and "Storage NVMe", click "Flash"
 - On `sdkmanager` click "FINISH AND EXIT" once the process is completed
 - With a screen, mouse, and keyboard connected to the Jetson basedboad, log in, finish the configuration, power-off, put the board out of recovery mode and power-on again
-- Select an appropriate "Power Mode" (e.g. 25W)
+- Select an appropriate "Power Mode" (e.g. MAXN or 25W)
 
 <!-- 
 - [PX4 documentation](https://github.com/PX4/PX4-Autopilot/blob/main/docs/en/companion_computer/holybro_pixhawk_jetson_baseboard.md#flashing-the-jetson-board)

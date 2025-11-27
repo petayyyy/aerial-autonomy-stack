@@ -49,7 +49,7 @@ class YoloInferenceNode(Node):
             provider_options = {
                 'trt_engine_cache_enable': True,
                 'trt_engine_cache_path': cache_path,
-                # 'trt_fp16_enable': True, # Optional: Enable FP16 for Jetson speedup
+                'trt_fp16_enable': True, # Optional: enable FP16 for Jetson speedup (from 22 to 12ms on YOLOn, longer cache build time, 10 vs 3')
             }
             self.session = ort.InferenceSession(
                 model_path,
@@ -129,8 +129,8 @@ class YoloInferenceNode(Node):
                     "nvarguscamerasrc sensor-id=0 ! "
                     "video/x-raw(memory:NVMM), width=1280, height=720, framerate=60/1 ! "
                     "nvvidconv ! "
-                    "video/x-raw, format=BGRx, width=1280, height=720, framerate=60/1 ! "
-                    "videoconvert ! "
+                    "video/x-raw, width=640, height=640, format=BGRx ! " # Keep 1280x720 frame instead: "video/x-raw, format=BGRx, width=1280, height=720, framerate=60/1 ! "
+                    "videoconvert ! video/x-raw, format=BGR ! " # Keep 1280x720 frame instead: "videoconvert ! "
                     "appsink drop=true max-buffers=1 sync=false"
                 ) # Test with: gst-launch-1.0 nvarguscamerasrc sensor-id=0 ! 'video/x-raw(memory:NVMM), width=1280, height=720, framerate=60/1' ! nvvidconv ! nv3dsink -e
                 cap = cv2.VideoCapture(gst_pipeline_string, cv2.CAP_GSTREAMER)
@@ -213,6 +213,8 @@ class YoloInferenceNode(Node):
                 pass # Drop frame if the main thread is lagging
 
     def do_yolo(self, frame):
+        # if frame.shape[2] == 4: # Handle 4-channel input (BGRx) to avoid "videoconvert ! video/x-raw, format=BGR ! "
+        #     frame = frame[:, :, :3]
         h0, w0 = frame.shape[:2]
         
         img = cv2.dnn.blobFromImage(frame, 1/255.0, (INPUT_SIZE, INPUT_SIZE), swapRB=True, crop=False)
