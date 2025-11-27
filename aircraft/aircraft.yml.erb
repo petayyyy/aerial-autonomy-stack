@@ -12,7 +12,7 @@
   drone_type = ENV.fetch('DRONE_TYPE', 'quad')
   drone_id = ENV.fetch('DRONE_ID', 1).to_i
 
-  hitl = ENV.fetch('HITL', 'false')
+  hitl = ENV.fetch('HITL', 'false') == 'true'
   gnd_container = ENV.fetch('GND_CONTAINER', 'true') == 'true'
 
   record_rosbag = ENV.fetch('RECORD_ROSBAG', 'false') == 'true'
