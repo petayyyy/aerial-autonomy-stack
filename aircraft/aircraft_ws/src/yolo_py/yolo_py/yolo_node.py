@@ -238,25 +238,23 @@ class YoloInferenceNode(Node):
         boxes = boxes[mask]
         confidences = confidences[mask]
         class_ids = class_ids[mask]
+
+        boxes = boxes.astype(np.float32)
+        nm_boxes = np.empty_like(boxes)
+        nm_boxes[:, 2] = boxes[:, 2] # Copy w
+        nm_boxes[:, 3] = boxes[:, 3] # Copy h
+        nm_boxes[:, 0] = boxes[:, 0] - (boxes[:, 2] * 0.5) # x_tl
+        nm_boxes[:, 1] = boxes[:, 1] - (boxes[:, 3] * 0.5) # y_tl
         
-        # Convert [x, y, w, h] to [x1, y1, x2, y2]
-        dw = boxes[:, 2] * 0.5 
-        dh = boxes[:, 3] * 0.5
-        x1 = boxes[:, 0] - dw
-        y1 = boxes[:, 1] - dh
-        x2 = boxes[:, 0] + dw
-        y2 = boxes[:, 1] + dh
-        boxes_xyxy = np.stack((x1, y1, x2, y2), axis=1)
-        
-        # Apply Non-Maximal Suppression
-        indices = cv2.dnn.NMSBoxes(boxes_xyxy, confidences, CONF_THRESH, NMS_THRESH)
+        # Apply Non-Maximal Suppression cv2.dnn.NMSBoxes expects [x_tl, y_tl, w, h]
+        indices = cv2.dnn.NMSBoxes(nm_boxes, confidences, CONF_THRESH, NMS_THRESH)
         
         if len(indices) == 0:
             return np.array([]), np.array([]), np.array([])
 
         indices = np.array(indices).flatten() # indices might be a list or a tuple of arrays depending on cv2 version, flatten it
         
-        boxes = boxes_xyxy[indices]
+        boxes = boxes[indices]
         confidences = confidences[indices]
         class_ids = class_ids[indices]
 
@@ -270,11 +268,10 @@ class YoloInferenceNode(Node):
         w_half = w * 0.5
         h_half = h * 0.5
         
-        # Vectorized calculations
-        center_x = (boxes[:, 0] + boxes[:, 2]) * 0.5
-        center_y = (boxes[:, 1] + boxes[:, 3]) * 0.5
-        widths = boxes[:, 2] - boxes[:, 0]
-        heights = boxes[:, 3] - boxes[:, 1]        
+        center_x = boxes[:, 0]
+        center_y = boxes[:, 1]
+        widths   = boxes[:, 2]
+        heights  = boxes[:, 3]
         norm_x = (center_x - w_half) / w
         norm_y = (h_half - center_y) / h
         azimuths = norm_x * self.hfov
@@ -315,7 +312,11 @@ class YoloInferenceNode(Node):
 
     def visualize(self, frame, boxes, confidences, class_ids):
         for i in range(len(boxes)):
-            x1, y1, x2, y2 = boxes[i].astype(int)
+            cx, cy, w, h = boxes[i]
+            x1 = int(cx - w/2)
+            y1 = int(cy - h/2)
+            x2 = int(cx + w/2)
+            y2 = int(cy + h/2)
             conf = confidences[i]
             class_id = class_ids[i]
             class_name = self.classes[class_id]
