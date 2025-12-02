@@ -297,13 +297,7 @@
     <model name="ground_plane">
       <static>true</static>
       <link name="link">
-        <collision name="collision">
-          <!-- <geometry>
-            <plane>
-              <normal>0 0 1</normal>
-              <size>1 1</size>
-            </plane>
-          </geometry> -->
+        <!-- <collision name="collision">
           <geometry>
             <mesh>
               <scale>1.56 1.56 1.56</scale>
@@ -317,7 +311,7 @@
             <bounce/>
             <contact/>
           </surface>
-        </collision>
+        </collision> -->
         <visual name="visual">
           <!-- <geometry>
             <plane>

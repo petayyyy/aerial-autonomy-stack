@@ -369,7 +369,8 @@
     </model>
 
     <model name="cylinder">
-      <pose>12 8 20 0 0 0</pose>
+      <pose>12 8 5 0 0 0</pose>
+      <static>true</static>
       <link name="link">
         <inertial>
           <pose>0 0 0 0 0 0</pose>
@@ -407,7 +408,8 @@
     </model>
 
     <model name="sphere">
-      <pose>20 0 10 0 0 0</pose>
+      <pose>20 0 2 0 0 0</pose>
+      <static>true</static>
       <link name="link">
         <inertial>
           <pose>0 0 0 0 0 0</pose>
@@ -443,7 +445,8 @@
     </model>
 
     <model name="sphere2">
-      <pose>-10 0 10 0 0 0</pose>
+      <pose>-10 0 6 0 0 0</pose>
+      <static>true</static>
       <link name="link">
         <inertial>
           <pose>0 0 0 0 0 0</pose>
@@ -479,7 +482,8 @@
     </model>
 
     <model name="cube">
-      <pose>10 -10 20 0 0 0</pose>
+      <pose>10 -10 3 0 0 0</pose>
+      <static>true</static>
       <link name="link">
         <inertial>
           <pose>0 0 0 0 0 0</pose>
@@ -516,17 +520,20 @@
 
     <include>
       <uri>model://unicorn</uri>
-      <pose degrees="true">40 -20 4.5 0 0 -30</pose>
+      <pose degrees="true">40 -20 3.4 0 0 -30</pose>
+      <static>true</static>
     </include>
 
     <include>
       <uri>model://rabbit</uri>
-      <pose degrees="true">20 20 2 0 0 30</pose>
+      <pose degrees="true">20 20 1 0 0 30</pose>
+      <static>true</static>
     </include>
 
     <include>
       <uri>model://duck</uri>
-      <pose degrees="true">2 0.5 2 0 0 -45</pose>
+      <pose degrees="true">2 0.5 0.07 0 0 -45</pose>
+      <static>true</static>
     </include>
 
     <!-- <include>
@@ -535,7 +542,8 @@
     </include>
     <include>
       <uri>model://subaru</uri>
-      <pose degrees="true">-5 30 4 0 0 0</pose>
+      <pose degrees="true">-5 30 2 0 0 0</pose>
+      <static>true</static>
     </include> -->
 
     <!-- <include>

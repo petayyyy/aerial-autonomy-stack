@@ -65,7 +65,7 @@ cd aerial-autonomy-stack/scripts/
 
 ![interface](https://github.com/user-attachments/assets/71b07851-42dd-45d4-a9f5-6b5b00cd85bc)
 
-> On a low-mid range laptop—i7-11 with 16GB RAM and RTX 3060—AAS can simulate a PX4 quad with YOLO and LiDAR at **~8-10x real-time-factor** (with flag `RTF=0.0`, monitor with `gz topic -e -t /stats`). Make sure you run `sudo prime-select nvidia` and rebooted to leverage GPU rendering and compute.
+> On a low-mid range laptop—i7-11 with 16GB RAM and RTX 3060—AAS can simulate a PX4 quad with YOLO and LiDAR at **10x real-time-factor** (with flag `RTF=0.0`, monitor with `gz topic -e -t /stats`). Make sure you run `sudo prime-select nvidia` and rebooted to leverage GPU rendering and compute.
 
 ```sh
 # 1. Start AAS

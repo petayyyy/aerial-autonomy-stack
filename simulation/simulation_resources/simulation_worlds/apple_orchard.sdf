@@ -297,19 +297,13 @@
     <model name="ground_plane">
       <static>true</static>
       <link name="link">
-        <collision name="collision">
+        <!-- <collision name="collision">
           <geometry>
             <mesh>
               <scale>.007 .007 .007</scale>
               <uri>model://orchard_gis_map/meshes/orchard_map.fbx</uri>
             </mesh>
           </geometry>
-          <!-- <geometry>
-            <plane>
-              <normal>0 0 1</normal>
-              <size>1 1</size>
-            </plane>
-          </geometry> -->
           <surface>
             <friction>
               <ode/>
@@ -317,7 +311,7 @@
             <bounce/>
             <contact/>
           </surface>
-        </collision>
+        </collision> -->
         <visual name="visual">
           <geometry>
             <mesh>
@@ -416,11 +410,11 @@
       <pose degrees="true">25 -12 0 0 0 0</pose>
     </include> -->
 
-    <include>
+    <!-- <include>
       <name>apple_grid_1</name>
       <uri>model://apple_grid</uri>
        <pose degrees="true">37 35 2.0 0 0 100</pose>
-    </include>
+    </include> -->
 
     <!-- <include>
       <name>apple_grid_2</name>
@@ -437,33 +431,39 @@
     <include>
       <uri>model://jeep</uri>
       <name>jeep_1</name>
-      <pose degrees="true">20 2 2.5 0 0 30</pose>
+      <pose degrees="true">20 2 1.1 0 0 30</pose>
+      <static>true</static>
     </include>
 
     <include>
       <uri>model://subaru</uri>
-      <pose degrees="true">-20 -2 2.5 0 0 -80</pose>
+      <pose degrees="true">-20 -2 1.2 0 0 -80</pose>
+      <static>true</static>
     </include>
 
     <include>
       <uri>model://jeep</uri>
       <name>jeep_2</name>
-      <pose degrees="true">-20 5 2.5 0 0 -90</pose>
+      <pose degrees="true">-20 5 1.55 0 0 -90</pose>
+      <static>true</static>
     </include>
 
     <include>
       <uri>model://airstream</uri>
-      <pose degrees="true">3 -8 5 0 0 -70</pose>
+      <pose degrees="true">3 -8 1.3 0 0 -70</pose>
+      <static>true</static>
     </include>
 
     <include>
       <uri>model://gazebo</uri>
-      <pose degrees="true">-5 -3 5 0 0 0</pose>
+      <pose degrees="true">-5 -3 1.15 0 0 0</pose>
+      <static>true</static>
     </include>
 
     <!-- <include>
       <uri>model://skibidi</uri>
-      <pose degrees="true">-50 250 3 0 0 80</pose>
+      <pose degrees="true">-50 250 -3 0 0 80</pose>
+      <static>true</static>
     </include> -->
 
   </world>
