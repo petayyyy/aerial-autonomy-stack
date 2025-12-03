@@ -23,6 +23,12 @@ HITL="${HITL:-false}" # Options: true, false (default)
 GND_CONTAINER="${GND_CONTAINER:-true}" # Options: true (default), false
 RTF="${RTF:-1.0}" # Real-time factor (default = 1.0), set to <=0.0 for as fast as possible execution
 START_AS_PAUSED="${START_AS_PAUSED:-false}" # Options: true, false (default)
+#
+SESSION_ID="${SIM_SUBNET//./_}-${AIR_SUBNET//./_}" # A suffix to make docker network and container names unique based on subnets
+NAME_NET_SIM="aas-sim-network-${SESSION_ID}"
+NAME_NET_AIR="aas-air-network-${SESSION_ID}"
+NAME_SIM_CNT="simulation-container-${SESSION_ID}"
+NAME_GND_CNT="ground-container-${SESSION_ID}"
 
 # Detect the environment (Ubuntu/GNOME, WSL, etc.)
 if command -v gnome-terminal >/dev/null 2>&1 && [ -n "$XDG_CURRENT_DESKTOP" ]; then
@@ -54,8 +60,8 @@ fi
 
 # Create docker networks for SITL
 if [[ "$HITL" == "false" ]]; then
-  docker network inspect aas-sim-network >/dev/null 2>&1 || docker network create --subnet=${SIM_SUBNET}.0.0/16 aas-sim-network
-  docker network inspect aas-air-network >/dev/null 2>&1 || docker network create --subnet=${AIR_SUBNET}.0.0/16 aas-air-network
+  docker network inspect $NAME_NET_SIM >/dev/null 2>&1 || docker network create --subnet=${SIM_SUBNET}.0.0/16 $NAME_NET_SIM
+  docker network inspect $NAME_NET_AIR >/dev/null 2>&1 || docker network create --subnet=${AIR_SUBNET}.0.0/16 $NAME_NET_AIR
 fi
 
 # Grant access to the X server
@@ -112,12 +118,12 @@ DOCKER_CMD="docker run -it --rm \
   --env GND_CONTAINER=$GND_CONTAINER \
   --env ROS_DOMAIN_ID=$SIM_ID \
   --privileged \
-  --name simulation-container"
+  --name $NAME_SIM_CNT"
 # Configure network for HITL or SITL
 if [[ "$HITL" == "true" ]]; then
   DOCKER_CMD="$DOCKER_CMD --net=host"
 else
-  DOCKER_CMD="$DOCKER_CMD --net=aas-sim-network --ip=${SIM_SUBNET}.90.${SIM_ID}"
+  DOCKER_CMD="$DOCKER_CMD --net=$NAME_NET_SIM --ip=${SIM_SUBNET}.90.${SIM_ID}"
 fi
 # Add WSL-specific options and complete the command
 if [[ "$DESK_ENV" == "wsl" ]]; then
@@ -140,9 +146,9 @@ if [[ "$HITL" == "false" ]]; then
       --env NUM_QUADS=$NUM_QUADS --env NUM_VTOLS=$NUM_VTOLS \
       --env SIMULATED_TIME=true \
       --env ROS_DOMAIN_ID=$GROUND_ID \
-      --net=aas-sim-network --ip=${SIM_SUBNET}.90.${GROUND_ID} \
+      --net=$NAME_NET_SIM --ip=${SIM_SUBNET}.90.${GROUND_ID} \
       --privileged \
-      --name ground-container"
+      --name $NAME_GND_CNT"
     # Add WSL-specific options and complete the command
     if [[ "$DESK_ENV" == "wsl" ]]; then
       DOCKER_CMD="$DOCKER_CMD $WSL_OPTS"
@@ -163,6 +169,7 @@ if [[ "$HITL" == "false" ]]; then
     
     for i in $(seq 1 $num_drones); do
       sleep 1.0 # Limit resource usage
+      local NAME_AIRCRAFT_CNT="aircraft-container-${SESSION_ID}_${DRONE_ID}"
       DOCKER_CMD="docker run -it --rm \
         --volume /tmp/.X11-unix:/tmp/.X11-unix:rw --device /dev/dri --gpus all \
         --env DISPLAY=$DISPLAY --env QT_X11_NO_MITSHM=1 --env NVIDIA_DRIVER_CAPABILITIES=all --env XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR \
@@ -172,9 +179,9 @@ if [[ "$HITL" == "false" ]]; then
         --env SIM_SUBNET=$SIM_SUBNET --env AIR_SUBNET=$AIR_SUBNET --env SIM_ID=$SIM_ID --env GROUND_ID=$GROUND_ID \
         --env GND_CONTAINER=$GND_CONTAINER \
         --env ROS_DOMAIN_ID=$DRONE_ID \
-        --net=aas-sim-network --ip=${SIM_SUBNET}.90.$DRONE_ID \
+        --net=$NAME_NET_SIM --ip=${SIM_SUBNET}.90.$DRONE_ID \
         --privileged \
-        --name aircraft-container_$DRONE_ID"
+        --name $NAME_AIRCRAFT_CNT"
       # Add WSL-specific options and complete the command
       if [[ "$DESK_ENV" == "wsl" ]]; then
         DOCKER_CMD="$DOCKER_CMD $WSL_OPTS"
@@ -193,9 +200,9 @@ if [[ "$HITL" == "false" ]]; then
 
   if [[ "$GND_CONTAINER" == "true" ]]; then
     sleep 2.0 # Once all containers are up, connect ground and aircraft containers to the air network
-    docker network connect --ip=${AIR_SUBNET}.90.$GROUND_ID aas-air-network ground-container
+    docker network connect --ip=${AIR_SUBNET}.90.$GROUND_ID $NAME_NET_AIR $NAME_GND_CNT
     for i in $(seq 1 $((NUM_QUADS + NUM_VTOLS))); do
-      docker network connect --ip=${AIR_SUBNET}.90.$i aas-air-network aircraft-container_$i
+      docker network connect --ip=${AIR_SUBNET}.90.$i $NAME_NET_AIR "aircraft-container-${SESSION_ID}_${i}"
     done
   fi
 fi
@@ -206,8 +213,8 @@ read -n 1 -s # Wait for user input
 
 # Cleanup function
 cleanup() {
-  DOCKER_PIDS=$(pgrep -f "docker run.*(simulation|ground|aircraft)-image" 2>/dev/null || true)
-  CONTAINER_NAMES=("simulation-container" "ground-container" "aircraft-container")
+  DOCKER_PIDS=$(pgrep -f "docker run.*${SESSION_ID}" 2>/dev/null || true)
+  CONTAINER_NAMES=("${NAME_SIM_CNT}" "${NAME_GND_CNT}" "aircraft-container-${SESSION_ID}")
   CONTAINERS_TO_STOP=""
   for name in "${CONTAINER_NAMES[@]}"; do
       CONTAINERS_TO_STOP+=$(docker ps -a -q --filter name="${name}" 2>/dev/null || true)
@@ -217,8 +224,8 @@ cleanup() {
   if [ -n "$CONTAINERS_TO_STOP" ]; then
       echo "$CONTAINERS_TO_STOP" | xargs docker stop
   fi
-  docker network rm aas-sim-network 2>/dev/null && echo "Removed aas-sim-network" || echo "Network aas-sim-network not found or already removed"
-  docker network rm aas-air-network 2>/dev/null && echo "Removed aas-air-network" || echo "Network aas-air-network not found or already removed"
+  docker network rm $NAME_NET_SIM 2>/dev/null && echo "Removed $NAME_NET_SIM" || echo "Network $NAME_NET_SIM not found or already removed"
+  docker network rm $NAME_NET_AIR 2>/dev/null && echo "Removed $NAME_NET_AIR" || echo "Network $NAME_NET_AIR not found or already removed"
   if [ -n "$DOCKER_PIDS" ]; then
     for dpid in $DOCKER_PIDS; do
       PARENT_PID=$(ps -o ppid= -p $dpid 2>/dev/null | tr -d ' ') # Determine process pids with a parent pid

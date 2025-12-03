@@ -13,7 +13,7 @@
 - ROS2 action-based autopilot interface (*via* XRCE-DDS or MAVROS)
 - **YOLOv8** (with ONNX GPU Runtimes) and **LiDAR** Odometry (with [KISS-ICP](https://github.com/PRBonn/kiss-icp))
 - 3D worlds for perception-based simulation
-- **Steppable** and **faster-than-real-time** simulation
+- **Steppable**, **faster-than-real-time**, and **multi-instance** simulation
 - Gazebo's wind effects plugin
 - **Dockerized simulation** based on [`nvcr.io/nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04`](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/cuda/tags)
 - **Dockerized deployment** based on [`nvcr.io/nvidia/l4t-jetpack:r36.4.0`](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-jetpack/tags)
@@ -65,7 +65,7 @@ cd aerial-autonomy-stack/scripts/
 
 ![interface](https://github.com/user-attachments/assets/71b07851-42dd-45d4-a9f5-6b5b00cd85bc)
 
-> On a low-mid range laptop—i7-11 with 16GB RAM and RTX 3060—AAS can simulate a PX4 quad with YOLO and LiDAR at **10x real-time-factor** (with flag `RTF=0.0`, monitor with `gz topic -e -t /stats`). Make sure you run `sudo prime-select nvidia` and rebooted to leverage GPU rendering and compute.
+> On a low-mid range laptop—i7-11 with 16GB RAM and RTX 3060—AAS can simulate a PX4 quad with YOLO and LiDAR at **10x real-time-factor** (with flag `RTF=0.0`, monitor with `gz topic -e -t /stats`). Run multiple `sim_run.sh` in parallel for even higher throughput. Make sure you run `sudo prime-select nvidia` and rebooted to leverage GPU rendering and compute.
 
 ```sh
 # 1. Start AAS
