@@ -332,7 +332,6 @@ Distributed under the MIT License. See `LICENSE.txt` for more information. Copyr
 
 ## Known Issues
 
-- ArduPilot CIRCLE mode for quads depends on the  QGC virtual joystick and requires to explicitly center the throttle with 'rc 3 1500' to keep altitude
 - ArduPilot SITL for Iris uses option -f that also sets "external": True, this is not the case for the Alti Transition from ArduPilot/SITL_Models
 - QGC is started with a virtual joystick (with low throttle if using only VTOLs and centered throttle if there are quads), this is reflective of real-life but note that this counts as "RC loss" when switching focus from one autopilot instance to another
 - On non-configured real-life AP, missing topics: ros2 topic echo /mavros/local_position/odom ros2 topic echo /mavros/home_position/home
@@ -345,6 +344,34 @@ Distributed under the MIT License. See `LICENSE.txt` for more information. Copyr
 ## TODOs
 
 Re-implement ArduPilot orbit action (without CIRCLE mode) for quads
+MWE
+AUTOPILOT=ardupilot NUM_QUADS=1 NUM_VTOLS=0 RTF=4.0 ./sim_run.sh
+
+ros2 service call /mavros/mission/push mavros_msgs/srv/WaypointPush "{start_index: 0, waypoints: [
+    { frame: 0, command: 16, is_current: true, autocontinue: true, x_lat: 45.547969, y_long: 8.939114, z_alt: 0.0 },
+    { frame: 3, command: 82, is_current: false, autocontinue: true, x_lat: 45.548329, y_long: 8.939114, z_alt: 20.0 },
+    { frame: 3, command: 82, is_current: false, autocontinue: true, x_lat: 45.547969, y_long: 8.939628, z_alt: 20.0 },
+    { frame: 3, command: 82, is_current: false, autocontinue: true, x_lat: 45.547609, y_long: 8.939114, z_alt: 20.0 },
+    { frame: 3, command: 82, is_current: false, autocontinue: true, x_lat: 45.547969, y_long: 8.938600, z_alt: 20.0 },
+    { frame: 2, command: 177, is_current: false, autocontinue: true, param1: 1.0, param2: -1.0 }
+]}"
+ros2 service call /mavros/set_mode mavros_msgs/srv/SetMode "{custom_mode: 'AUTO'}"
+ros2 service call /mavros/cmd/command mavros_msgs/srv/CommandLong "{
+    command: 195, 
+    param5: 45.547969, 
+    param6: 8.939114, 
+    param7: 0.0
+}"
+Unused
+ros2 service call /mavros/cmd/command mavros_msgs/srv/CommandLong "{command: 300}"
+ros2 service call /mavros/mission/set_current mavros_msgs/srv/WaypointSetCurrent "{wp_seq: 1}"
+
+Addresses
+  - ArduPilot CIRCLE mode for quads depends on the  QGC virtual joystick and requires to explicitly center the throttle with 'rc 3 1500' to keep altitude
+Remove from simulation.yml.erb
+  <% if is_quad %>
+    - sleep <%= sitl_instance * 3.0 + 35.0 %> && tmux send-keys -t 'sim:ardu_sitl_<%= drone_id %>.0' 'rc 3 1500' C-m
+  <% end %>
 
 Gymnasium RL interface
 - based on https://github.com/JacopoPan/gymnasium-docker-ros2
