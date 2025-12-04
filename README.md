@@ -344,9 +344,6 @@ Distributed under the MIT License. See `LICENSE.txt` for more information. Copyr
 
 ## TODOs
 
-Gymnasium RL interface
-- based on https://github.com/JacopoPan/gymnasium-docker-ros2
-
 LiDAR-inertial Odometry and SLAM
 - LiDAR driver https://github.com/Livox-SDK/livox_ros_driver2 in aircraft-image (the LiDAR should publish on topic `/lidar_points` for KISS-ICP)
 - Integrate [SPARK-FAST-LIO](https://github.com/MIT-SPARK/spark-fast-lio) or [SuperOdom](https://github.com/superxslam/SuperOdom) as baselines
