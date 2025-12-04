@@ -733,24 +733,6 @@ void ArdupilotInterface::orbit_handle_accepted(const std::shared_ptr<rclcpp_acti
         if (mav_type_ == 2) { // Multicopter
             if (((current_fsm_state == ArdupilotInterfaceState::MC_HOVER) || (current_fsm_state == ArdupilotInterfaceState::MC_ORBIT)) 
                     && (current_time_us > (time_of_last_srv_req_us_ + 1.0 * 1000000))) {
-                auto set_param_request = std::make_shared<ParamSetV2::Request>();
-                set_param_request->param_id = "CIRCLE_RADIUS";
-                set_param_request->value.type = 3; // Double
-                set_param_request->value.double_value = desired_r * 100.0; // cm
-                time_of_last_srv_req_us_ = current_time_us;
-                call_service_and_update_fsm<ParamSetV2, autopilot_interface_msgs::action::Orbit>(
-                    set_param_client_, set_param_request, goal_handle, 
-                    "Request param1 set", ArdupilotInterfaceState::MC_ORBIT_PARAM1_SET);
-            } else if ((current_fsm_state == ArdupilotInterfaceState::MC_ORBIT_PARAM1_SET) && (current_time_us > (time_of_last_srv_req_us_ + 1.0 * 1000000))) {
-                auto set_param_request = std::make_shared<ParamSetV2::Request>();
-                set_param_request->param_id = "CIRCLE_RATE";
-                set_param_request->value.type = 2; // Integer
-                set_param_request->value.integer_value = static_cast<int64_t>(std::ceil((5.0 / desired_r) * (180.0 / M_PI))); // HARDCODED: ~5m/s orbit tangential speed for quads, because the parameter is an integer, actual speed will depend on radius
-                time_of_last_srv_req_us_ = current_time_us;
-                call_service_and_update_fsm<ParamSetV2, autopilot_interface_msgs::action::Orbit>(
-                    set_param_client_, set_param_request, goal_handle, 
-                    "Request param2 set", ArdupilotInterfaceState::MC_ORBIT_PARAM2_SET);
-            } else if ((current_fsm_state == ArdupilotInterfaceState::MC_ORBIT_PARAM2_SET) && (current_time_us > (time_of_last_srv_req_us_ + 1.0 * 1000000))) {
                 auto mission_request = std::make_shared<WaypointPush::Request>();
                 mavros_msgs::msg::Waypoint wp1; // Create the first waypoint (dummy)
                 wp1.frame = 3;
@@ -761,19 +743,44 @@ void ArdupilotInterface::orbit_handle_accepted(const std::shared_ptr<rclcpp_acti
                 wp1.y_long = 0.0;
                 wp1.z_alt = 0.0;
                 mission_request->waypoints.push_back(wp1);
-                mavros_msgs::msg::Waypoint wp2; // Create the second waypoint on the orbit perimeter
                 auto [center_lat, center_lon] = lat_lon_from_cartesian(home_lat_, home_lon_, desired_east, desired_north);
-                double distance_to_orbit, heading_to_orbit;
-                geod.Inverse(center_lat, center_lon, lat_, lon_, distance_to_orbit, heading_to_orbit);
-                auto [des_lat, des_lon] = lat_lon_from_polar(center_lat, center_lon, desired_r, heading_to_orbit);
-                wp2.frame = 3;
-                wp2.command = 16; // MAV_CMD_NAV_WAYPOINT
-                wp2.is_current = false;
-                wp2.autocontinue = true;
-                wp2.x_lat = des_lat;
-                wp2.y_long = des_lon;
-                wp2.z_alt = desired_alt;          
-                mission_request->waypoints.push_back(wp2);
+                mavros_msgs::msg::Waypoint wp_roi; // Waypoint to lock nose to center
+                wp_roi.frame = 3;
+                wp_roi.command = 195; // MAV_CMD_DO_SET_ROI_LOCATION
+                wp_roi.is_current = false;
+                wp_roi.autocontinue = true;
+                wp_roi.x_lat = center_lat; // Param 5
+                wp_roi.y_long = center_lon; // Param 6
+                wp_roi.z_alt = 0.0;
+                mission_request->waypoints.push_back(wp_roi);
+                int num_points = std::max(8, static_cast<int>((2 * M_PI * desired_r) / 15.0)); // At least 8 points, or 1 point every ~15 meters of circumference
+                double angle_increment = 360.0 / num_points;
+                double dist_to_center, azimuth_to_center, azimuth_from_center;
+                geod.Inverse(center_lat, center_lon, lat_, lon_, dist_to_center, azimuth_from_center, azimuth_to_center);
+                double start_angle = azimuth_from_center;
+                for (int i = 0; i < num_points; i++) {
+                    double current_angle = start_angle + (i * angle_increment);
+                    if (current_angle > 360.0) current_angle -= 360.0;
+                    double wp_lat, wp_lon, dummy_azi;
+                    geod.Direct(center_lat, center_lon, azimuth_from_center + (i * angle_increment), desired_r, wp_lat, wp_lon, dummy_azi);
+                    mavros_msgs::msg::Waypoint wp_orbit;
+                    wp_orbit.frame = 3;
+                    wp_orbit.command = 82; // SPLINE_WAYPOINT (82) for smooth curves, or NAV_WAYPOINT (16) for straight lines
+                    wp_orbit.is_current = false;
+                    wp_orbit.autocontinue = true;
+                    wp_orbit.x_lat = wp_lat;
+                    wp_orbit.y_long = wp_lon;
+                    wp_orbit.z_alt = desired_alt;
+                    mission_request->waypoints.push_back(wp_orbit);
+                }
+                mavros_msgs::msg::Waypoint wp_jump; // Jump waypoiny (to loop forever)
+                wp_jump.frame = 2; // MAV_FRAME_MISSION
+                wp_jump.command = 177; // MAV_CMD_DO_JUMP
+                wp_jump.is_current = false;
+                wp_jump.autocontinue = true;
+                wp_jump.param1 = 2.0; // Sequence number to jump to (2 is the first orbit WP, skipping dummy (0) and ROI (1))
+                wp_jump.param2 = -1.0; // Repeat count (-1 = infinite)
+                mission_request->waypoints.push_back(wp_jump);
                 time_of_last_srv_req_us_ = current_time_us;
                 call_service_and_update_fsm<WaypointPush, autopilot_interface_msgs::action::Orbit>(
                     wp_push_client_, mission_request, goal_handle, 
@@ -800,43 +807,6 @@ void ArdupilotInterface::orbit_handle_accepted(const std::shared_ptr<rclcpp_acti
                     set_wp_client_, set_current_request, goal_handle, 
                     "Requesting to set current waypoint", ArdupilotInterfaceState::MC_ORBIT_TRANSFER);
             } else if ((current_fsm_state == ArdupilotInterfaceState::MC_ORBIT_TRANSFER) && (current_time_us > (time_of_last_srv_req_us_ + 1.0 * 1000000))) {
-                double distance_from_orbit_center_in_meters;
-                auto [center_lat, center_lon] = lat_lon_from_cartesian(home_lat_, home_lon_, desired_east, desired_north);
-                geod.Inverse(lat_, lon_, center_lat, center_lon, distance_from_orbit_center_in_meters);
-                if ((std::abs(distance_from_orbit_center_in_meters - desired_r) < 1.0) && (std::abs(alt_ - (home_alt_ + desired_alt)) < 2.0)) { // HARDCODED: thresholds of 1m xy, 2m z
-                    auto command_request = std::make_shared<CommandLong::Request>();
-                    command_request->command = 195; // MAV_CMD_DO_SET_ROI_LOCATION
-                    command_request->param5 = center_lat;
-                    command_request->param6 = center_lon;
-                    time_of_last_srv_req_us_ = current_time_us;
-                    call_service_and_update_fsm<CommandLong, autopilot_interface_msgs::action::Orbit>(
-                        command_long_client_, command_request, goal_handle, 
-                        "Request ROI", ArdupilotInterfaceState::MC_ORBIT_ROI_SET);
-                }
-            } else if ((current_fsm_state == ArdupilotInterfaceState::MC_ORBIT_ROI_SET) && (current_time_us > (time_of_last_srv_req_us_ + 1.0 * 1000000))) {
-                auto [center_lat, center_lon] = lat_lon_from_cartesian(home_lat_, home_lon_, desired_east, desired_north);
-                double distance, required_heading_deg;
-                geod.Inverse(lat_, lon_, center_lat, center_lon, distance, required_heading_deg);
-                double normalized_current = fmod(heading_ + 360.0, 360.0);
-                double normalized_required = fmod(required_heading_deg + 360.0, 360.0);
-                double angle_diff = normalized_required - normalized_current;
-                if (angle_diff > 180.0) {
-                    angle_diff -= 360.0;
-                } else if (angle_diff < -180.0) {
-                    angle_diff += 360.0;
-                }
-                if (std::abs(angle_diff) >= 3.0) {
-                    std::unique_lock<std::shared_mutex> lock(node_data_mutex_); // Use unique_lock for data writes
-                    aircraft_fsm_state_ = ArdupilotInterfaceState::MC_ORBIT_TRANSFER; // Step back to the previous service request until heading is reached
-                } else if (std::abs(angle_diff) < 3.0) { // HARDCODED: threshold of 3deg on target heading
-                    auto set_mode_request = std::make_shared<SetMode::Request>();
-                    set_mode_request->custom_mode = "CIRCLE";
-                    time_of_last_srv_req_us_ = current_time_us;
-                    call_service_and_update_fsm<SetMode, autopilot_interface_msgs::action::Orbit>(
-                        set_mode_client_, set_mode_request, goal_handle, 
-                        "Request mode", ArdupilotInterfaceState::MC_ORBIT_REACHED);
-                }
-            } else if ((current_fsm_state == ArdupilotInterfaceState::MC_ORBIT_REACHED) && (current_time_us > (time_of_last_srv_req_us_ + 1.0 * 1000000))) {
                 feedback->message = "MC orbit completed";
                 goal_handle->publish_feedback(feedback);
                 std::unique_lock<std::shared_mutex> lock(node_data_mutex_); // Use unique_lock for data writes
@@ -1158,14 +1128,10 @@ std::string ArdupilotInterface::fsm_state_to_string(ArdupilotInterfaceState stat
         case ArdupilotInterfaceState::VTOL_TAKEOFF_MISSION_STARTED: return "VTOL_TAKEOFF_MISSION_STARTED";
         case ArdupilotInterfaceState::FW_CRUISE: return "FW_CRUISE";
         case ArdupilotInterfaceState::MC_ORBIT: return "MC_ORBIT";
-        case ArdupilotInterfaceState::MC_ORBIT_PARAM1_SET: return "MC_ORBIT_PARAM1_SET";
-        case ArdupilotInterfaceState::MC_ORBIT_PARAM2_SET: return "MC_ORBIT_PARAM2_SET";
         case ArdupilotInterfaceState::MC_ORBIT_MISSION_UPLOADED: return "MC_ORBIT_MISSION_UPLOADED";
         case ArdupilotInterfaceState::MC_ORBIT_MISSION_MODE: return "MC_ORBIT_MISSION_MODE";
         case ArdupilotInterfaceState::MC_ORBIT_MISSION_STARTED: return "MC_ORBIT_MISSION_STARTED";
         case ArdupilotInterfaceState::MC_ORBIT_TRANSFER: return "MC_ORBIT_TRANSFER";
-        case ArdupilotInterfaceState::MC_ORBIT_REACHED: return "MC_ORBIT_REACHED";
-        case ArdupilotInterfaceState::MC_ORBIT_ROI_SET: return "MC_ORBIT_ROI_SET";
         case ArdupilotInterfaceState::VTOL_ORBIT_MISSION_UPLOADED: return "VTOL_ORBIT_MISSION_UPLOADED";
         case ArdupilotInterfaceState::VTOL_ORBIT_MISSION_MODE: return "VTOL_ORBIT_MISSION_MODE";
         case ArdupilotInterfaceState::VTOL_ORBIT_MISSION_STARTED: return "VTOL_ORBIT_MISSION_STARTED";
