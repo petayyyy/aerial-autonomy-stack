@@ -48,8 +48,9 @@ def main():
             obs, reward, terminated, truncated, info = env.step(action)
             if terminated or truncated:
                 obs, info = env.reset()
-        total_time = time.time() - start_time 
-        print(f"\nAverage Step Time: {(total_time / STEPS) * 1000:.3f} ms")
+        total_time = time.time() - start_time
+        print(f"\nTest completed in: {total_time} s")
+        print(f"Average Step Time: {(total_time / STEPS) * 1000:.3f} ms")
         print(f"Throughput: {(STEPS / total_time):.2f} steps/second")
         print(f"Time for 1,000,000 steps: {((total_time * (1000000/STEPS))/3600):.2f} hours")
         env.close()

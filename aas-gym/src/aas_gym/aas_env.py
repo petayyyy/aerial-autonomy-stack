@@ -55,7 +55,7 @@ class AASEnv(gym.Env):
         #
         self.GND_CONTAINER = False
         self.RTF = 0.0
-        self.START_AS_PAUSED = True
+        self.START_AS_PAUSED = True # Start the simulation paused and manually step with gz-sim WorldControl
         self.INSTANCE = 0
         #
         sim_parts = self.SIM_SUBNET.split('.')
@@ -245,7 +245,7 @@ class AASEnv(gym.Env):
             # Deserialize
             unpacked = struct.unpack('iI', reply_bytes) # i = int32 (sec), I = uint32 (nanosec)
             sec, nanosec = unpacked
-            # print(f"Received clock update: {sec}.{nanosec}")
+            print(f"Clock update in reset(): {sec}.{nanosec}")
         except zmq.error.Again:
             print("ZMQ Error: Reply from container timed out.")
         except ValueError:
@@ -280,7 +280,7 @@ class AASEnv(gym.Env):
             # Deserialize
             unpacked = struct.unpack('iI', reply_bytes) # i = int32 (sec), I = uint32 (nanosec)
             sec, nanosec = unpacked
-            # print(f"Received clock update: {sec}.{nanosec}")
+            # print(f"Clock update in step(): {sec}.{nanosec}")
         except zmq.error.Again:
             print("ZMQ Error: Reply from container timed out.")
         except ValueError:
