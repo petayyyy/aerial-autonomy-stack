@@ -172,6 +172,8 @@ windows:
         <% end %>
         <% if gnd_container %>
         - "ROS_DOMAIN_ID=<%= ground_id %> ros2 run ros_gz_bridge parameter_bridge /clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"
+        <% else %>
+        - ros2 run ros_gz_bridge parameter_bridge /clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock
         <% end %>
 
   <% if gymnasium %>

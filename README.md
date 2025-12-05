@@ -246,9 +246,9 @@ Included `WORLD`s:
 
 ---
 
-## `aas-gym` Gymnasium Environment
+## Gymnasium Environment
 
-Install Anaconda (https://docs.conda.io/projects/conda/en/stable/user-guide/install/linux.html):
+Install [Anaconda](https://docs.conda.io/projects/conda/en/stable/user-guide/install/linux.html):
 ```sh
 wget https://repo.anaconda.com/archive/Anaconda3-2025.06-0-Linux-x86_64.sh
 bash Anaconda3-2025.06-0-Linux-x86_64.sh
@@ -267,14 +267,14 @@ Use as:
 ```sh
 cd aerial-autonomy-stack/scripts
 conda activate aas
-python3 gymnasium_examples.py --mode step       # Manually step the simulation
-python3 gymnasium_examples.py --mode speed      # Check the simulation throughput
+python3 gymnasium_examples.py --mode step             # Manually step the simulation
+python3 gymnasium_examples.py --mode speed            # Check the simulation throughput
 ```
 
 <!--
 
 TODO:
-python3 gymnasium_examples.py --mode learn      # Train and test a PPO agent
+python3 gymnasium_examples.py --mode learn            # Train and test a PPO agent
 
 Debug with:
 docker exec -it [container-name] tmux attach

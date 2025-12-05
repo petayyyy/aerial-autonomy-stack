@@ -4,6 +4,8 @@
 #include <mutex>
 #include <condition_variable>
 #include <vector>
+#include <cstdlib>
+#include <string>
 #include <cstring>
 // ROS 2 Includes
 #include "rclcpp/rclcpp.hpp"
@@ -45,6 +47,13 @@ public:
             "/state", 10, 
             std::bind(&ZMQBridge::state_callback, this, std::placeholders::_1));
 
+        const char* env_val = std::getenv("WORLD");
+        if (env_val == nullptr) {
+            RCLCPP_ERROR(this->get_logger(), "Environment variable 'WORLD' was not set.");
+        }
+        std::string world_name = env_val;
+        service_topic_ = "/world/" + world_name + "/control";
+
         // 3. Start ZMQ Thread
         running_ = true;
         zmq_thread_ = std::thread(&ZMQBridge::zmq_listener, this);
@@ -67,6 +76,7 @@ private:
     rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr subscription_;
     
     gz::transport::Node gz_node_;
+    std::string service_topic_;
 
     std::thread zmq_thread_;
     std::atomic<bool> running_;
@@ -117,12 +127,12 @@ private:
 
                     // 3. Step Gazebo
                     gz::msgs::WorldControl req;
-                    req.set_multi_step(1); // 50ms (see gdr2-world.sdf) = 20Hz (see dynamics_node.py)
+                    req.set_multi_step(1); // To be based on the timestep in the world SDF (250Hz/4ms for PX4, 500Hz/2ms for ArduPilot)
                     req.set_pause(true);
                     gz::msgs::Boolean rep;
                     bool result;
                     unsigned int timeout = 1000; 
-                    bool executed = gz_node_.Request("/world/gdr2-world/control", req, timeout, rep, result);
+                    bool executed = gz_node_.Request(service_topic_, req, timeout, rep, result);
                     if (!executed) {
                         RCLCPP_WARN(this->get_logger(), "Gazebo service call failed or timed out.");
                     }
