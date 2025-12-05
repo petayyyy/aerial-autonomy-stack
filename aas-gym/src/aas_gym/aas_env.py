@@ -4,8 +4,11 @@ import docker
 import zmq
 import time
 import struct
+import os
+import subprocess
+import shutil
 
-from docker.types import NetworkingConfig, EndpointConfig
+from docker.types import NetworkingConfig, EndpointConfig, DeviceRequest
 
 
 class AASEnv(gym.Env):
@@ -76,6 +79,16 @@ class AASEnv(gym.Env):
         self.SIM_CONT_NAME = f"simulation-container-inst{self.INSTANCE}"
         # self.GND_CONT_NAME = f"ground-container-inst{self.INSTANCE}"
         #
+        if not self.HEADLESS:
+            if shutil.which("xhost"):
+                print("Granting X Server access to Docker containers...")
+                try:
+                    subprocess.run(["xhost", "+local:docker"], check=True)
+                    print("X Server access granted.")
+                except subprocess.CalledProcessError as e:
+                    print(f"Warning: Could not configure xhost: {e}")
+            else:
+                print("Error: 'xhost' command not found.")
         networks_config = [
             {"name": self.SIM_NET_NAME, "subnet_base": self.SIM_SUBNET},
             # {"name": self.AIR_NET_NAME, "subnet_base": self.AIR_SUBNET}
@@ -108,15 +121,46 @@ class AASEnv(gym.Env):
             self.networks[net_name] = new_network
             print(f"Network '{net_name}' created on subnet {base_ip}.0.0/16")
         #
+        env_display = os.environ.get('DISPLAY', '')
+        env_xdg = os.environ.get('XDG_RUNTIME_DIR', '')
+        gpu_requests = [
+            DeviceRequest(count=-1, capabilities=[['gpu']]) # Translate "--gpus all"
+        ]
+        volume_binds = { # Translate "--volume /tmp/.X11-unix:/tmp/.X11-unix:rw"
+            '/tmp/.X11-unix': {'bind': '/tmp/.X11-unix', 'mode': 'rw'} # Format: {'host_path': {'bind': 'container_path', 'mode': 'rw'}}
+        }
+        device_binds = ['/dev/dri:/dev/dri:rwm'] # Translate "--device /dev/dri"
+        #
         print(f"Creating Simulation Container ({self.SIM_CONT_NAME})...")
         self.simulation_container = self.client.containers.create(
             "simulation-image:latest",
             name=self.SIM_CONT_NAME,
-            tty=True,
+            tty=True, # -it
             detach=True,
             auto_remove=True,
+            privileged=True, # --privileged
+            volumes=volume_binds,
+            devices=device_binds,
+            device_requests=gpu_requests,
             environment={
-                "ROS_DOMAIN_ID": str(100),
+                "DISPLAY": env_display,
+                "QT_X11_NO_MITSHM": "1",
+                "NVIDIA_DRIVER_CAPABILITIES": "all",
+                "XDG_RUNTIME_DIR": env_xdg,
+                "AUTOPILOT": self.AUTOPILOT,
+                "HEADLESS": str(self.HEADLESS).lower(),
+                "CAMERA": str(self.CAMERA).lower(),
+                "LIDAR": str(self.LIDAR).lower(),
+                "NUM_QUADS": str(self.NUM_QUADS),
+                "NUM_VTOLS": str(self.NUM_VTOLS),
+                "WORLD": self.WORLD,
+                "SIMULATED_TIME": "true",
+                "RTF": str(self.RTF),
+                "START_AS_PAUSED": str(self.START_AS_PAUSED).lower(),
+                "SIM_SUBNET": self.SIM_SUBNET,
+                # "GROUND_ID": self.GROUND_ID,
+                "GND_CONTAINER": str(self.GND_CONTAINER).lower(),
+                "ROS_DOMAIN_ID": self.SIM_ID,
             }
         )
         print(f"Connecting {self.SIM_CONT_NAME} to {self.SIM_NET_NAME}...")
@@ -135,13 +179,34 @@ class AASEnv(gym.Env):
         for i in range(1, self.NUM_QUADS + self.NUM_VTOLS + 1):            
             air_cont_name = f"aircraft-container-inst{self.INSTANCE}_{i}"
             print(f"Creating Aircraft Container {air_cont_name}...")
+            drone_type = "quad" if i <= self.NUM_QUADS else "vtol"
             air_cont = self.client.containers.create(
                 "aircraft-image:latest",
                 name=air_cont_name,
-                tty=True,
+                tty=True, # -it
                 detach=True,
                 auto_remove=True,
+                privileged=True, # --privileged
+                volumes=volume_binds,
+                devices=device_binds,
+                device_requests=gpu_requests,
                 environment={
+                    "DISPLAY": env_display,
+                    "QT_X11_NO_MITSHM": "1",
+                    "NVIDIA_DRIVER_CAPABILITIES": "all",
+                    "XDG_RUNTIME_DIR": env_xdg,
+                    "AUTOPILOT": self.AUTOPILOT,
+                    "HEADLESS": str(self.HEADLESS).lower(),
+                    "CAMERA": str(self.CAMERA).lower(),
+                    "LIDAR": str(self.LIDAR).lower(),
+                    "DRONE_TYPE": drone_type,
+                    "DRONE_ID": str(i),
+                    "SIMULATED_TIME": "true",
+                    "SIM_SUBNET": self.SIM_SUBNET,
+                    # "AIR_SUBNET": self.AIR_SUBNET,
+                    "SIM_ID": self.SIM_ID,
+                    # "GROUND_ID": self.GROUND_ID,
+                    "GND_CONTAINER": str(self.GND_CONTAINER).lower(),
                     "ROS_DOMAIN_ID": str(i),
                 }
             )
