@@ -55,7 +55,7 @@ class AASEnv(gym.Env):
         self.SIM_SUBNET = "10.42"
         self.AIR_SUBNET = "10.22"
         self.SIM_ID = "100"
-        self.GROUND_ID = "101"
+        # self.GROUND_ID = "101"
         #
         self.NUM_QUADS = 1
         self.NUM_VTOLS = 0
@@ -67,18 +67,18 @@ class AASEnv(gym.Env):
         self.INSTANCE = 0
         #
         sim_parts = self.SIM_SUBNET.split('.')
-        air_parts = self.AIR_SUBNET.split('.')
         self.SIM_SUBNET = f"{sim_parts[0]}.{int(sim_parts[1]) + self.INSTANCE}"
-        self.AIR_SUBNET = f"{air_parts[0]}.{int(air_parts[1]) + self.INSTANCE}"
+        # air_parts = self.AIR_SUBNET.split('.')
+        # self.AIR_SUBNET = f"{air_parts[0]}.{int(air_parts[1]) + self.INSTANCE}"
         #
         self.SIM_NET_NAME = f"aas-sim-network-inst{self.INSTANCE}"
-        self.AIR_NET_NAME = f"aas-air-network-inst{self.INSTANCE}"
+        # self.AIR_NET_NAME = f"aas-air-network-inst{self.INSTANCE}"
         self.SIM_CONT_NAME = f"simulation-container-inst{self.INSTANCE}"
-        self.GND_CONT_NAME = f"ground-container-inst{self.INSTANCE}"
+        # self.GND_CONT_NAME = f"ground-container-inst{self.INSTANCE}"
         #
         networks_config = [
             {"name": self.SIM_NET_NAME, "subnet_base": self.SIM_SUBNET},
-            {"name": self.AIR_NET_NAME, "subnet_base": self.AIR_SUBNET}
+            # {"name": self.AIR_NET_NAME, "subnet_base": self.AIR_SUBNET}
         ]
         self.networks = {}
         for net_config in networks_config:
@@ -107,47 +107,57 @@ class AASEnv(gym.Env):
             )
             self.networks[net_name] = new_network
             print(f"Network '{net_name}' created on subnet {base_ip}.0.0/16")
-
-        # SIMULATION_IP = "10.42.0.20"
-        # print("Creating simulation-container...")
-        # self.simulation_container = self.client.containers.create(
-        #     "gdr2-image:latest",
-        #     name="simulation-container",
-        #     tty=True,
-        #     detach=True,
-        #     auto_remove=True,
-        #     environment={
-        #         "ROS_DOMAIN_ID": "42",
-        #         "TMUX_OPTS": "simulation",
-        #     }
-        # )
-        # print(f"Connecting simulation-container to {self.NETWORK_NAME} with IP {SIMULATION_IP}...")
-        # self.network.connect(
+        #
+        print(f"Creating Simulation Container ({self.SIM_CONT_NAME})...")
+        self.simulation_container = self.client.containers.create(
+            "simulation-image:latest",
+            name=self.SIM_CONT_NAME,
+            tty=True,
+            detach=True,
+            auto_remove=True,
+            environment={
+                "ROS_DOMAIN_ID": str(100),
+            }
+        )
+        print(f"Connecting {self.SIM_CONT_NAME} to {self.SIM_NET_NAME}...")
+        self.networks[self.SIM_NET_NAME].connect(
+            self.simulation_container,
+            ipv4_address=f"{self.SIM_SUBNET}.90.{self.SIM_ID}"
+        )
+        # print(f"Connecting {self.SIM_CONT_NAME} to {self.AIR_NET_NAME}...")
+        # self.networks[self.AIR_NET_NAME].connect(
         #     self.simulation_container,
-        #     ipv4_address=SIMULATION_IP
+        #     ipv4_address=f"{self.AIR_SUBNET}.90.{self.SIM_ID}"
         # )
-        # self.simulation_container.start()
-
-        # DYNAMICS_IP = "10.42.0.30"
-        # print("Creating dynamics-container...")
-        # self.dynamics_container = self.client.containers.create(
-        #     "gdr2-image:latest",
-        #     name="dynamics-container",
-        #     tty=True,
-        #     detach=True,
-        #     auto_remove=True,
-        #     environment={
-        #         "ROS_DOMAIN_ID": "42",
-        #         "TMUX_OPTS": "dynamics",
-        #     }
-        # )
-        # print(f"Connecting dynamics-container to {self.NETWORK_NAME} with IP {DYNAMICS_IP}...")
-        # self.network.connect(
-        #     self.dynamics_container,
-        #     ipv4_address=DYNAMICS_IP
-        # )
-        # self.dynamics_container.start()
-        # print("Docker setup complete. Containers are running.")
+        self.simulation_container.start()
+        #
+        self.aircraft_containers = []
+        for i in range(1, self.NUM_QUADS + self.NUM_VTOLS + 1):            
+            air_cont_name = f"aircraft-container-inst{self.INSTANCE}_{i}"
+            print(f"Creating Aircraft Container {air_cont_name}...")
+            air_cont = self.client.containers.create(
+                "aircraft-image:latest",
+                name=air_cont_name,
+                tty=True,
+                detach=True,
+                auto_remove=True,
+                environment={
+                    "ROS_DOMAIN_ID": str(i),
+                }
+            )
+            print(f"Connecting {air_cont_name} to {self.SIM_NET_NAME}...")
+            self.networks[self.SIM_NET_NAME].connect(
+                air_cont,
+                ipv4_address=f"{self.SIM_SUBNET}.90.{i}"
+            )
+            # print(f"Connecting {air_cont_name} to {self.AIR_NET_NAME}...")
+            # self.networks[self.AIR_NET_NAME].connect(
+            #     air_cont,
+            #     ipv4_address=f"{self.AIR_SUBNET}.90.{i}"
+            # )
+            air_cont.start()
+            self.aircraft_containers.append(air_cont)
+        print("Docker setup complete. All containers are running and connected.")
 
         # # ZeroMQ Setup
         # self.ZMQ_PORT = 5555
@@ -275,17 +285,18 @@ class AASEnv(gym.Env):
         if self.render_mode == "human":
             print()  # Add a newline after the final render
         
-        # Docker clean-up (remove=True handles removal after stop)
-        # try:
-        #     self.simulation_container.stop()
-        #     print(f"Simulation container stopped.")
-        # except Exception:
-        #     pass
-        # try:
-        #     self.dynamics_container.stop()
-        #     print(f"Dynamics container stopped.")
-        # except Exception:
-        #     pass
+        # Docker clean-up (auto_remove=True in the creation step handles removal after stop)
+        try:
+            self.simulation_container.stop()
+            print(f"Simulation container stopped.")
+        except Exception:
+            pass
+        for container in self.aircraft_containers:
+            try:
+                container.stop()
+                print(f"Aircraft container '{container.name}' stopped.")
+            except Exception:
+                pass
         for net_name, network_obj in self.networks.items():
             try:
                 network_obj.remove()
