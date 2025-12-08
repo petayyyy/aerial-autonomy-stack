@@ -17,7 +17,7 @@ class AASEnv(gym.Env):
     def __init__(self, render_mode=None):
         super().__init__()
         
-        self.max_steps = 1000  # Max steps per episode
+        self.max_steps = 10000  # Max steps per episode
         self.dt = 0.05         # Time step
         # Observation Space: [position, velocity], position is in [-1, 1], velocity is in [-5, 5]
         self.obs_low = np.array([-1.0, -5.0], dtype=np.float32)
@@ -162,7 +162,7 @@ class AASEnv(gym.Env):
         #     self.simulation_container,
         #     ipv4_address=f"{self.AIR_SUBNET}.90.{self.SIM_ID}"
         # )
-        self.simulation_container.start()
+        # self.simulation_container.start()
         #
         self.aircraft_containers = []
         for i in range(1, self.NUM_QUADS + self.NUM_VTOLS + 1):            
@@ -210,7 +210,7 @@ class AASEnv(gym.Env):
             #     air_cont,
             #     ipv4_address=f"{self.AIR_SUBNET}.90.{i}"
             # )
-            air_cont.start()
+            # air_cont.start()
             self.aircraft_containers.append(air_cont)
         print("Docker setup complete. All containers are running and connected.")
 
@@ -219,9 +219,9 @@ class AASEnv(gym.Env):
         self.ZMQ_IP = f"{self.SIM_SUBNET}.90.{self.SIM_ID}"
         self.zmq_context = zmq.Context()
         self.socket = self.zmq_context.socket(zmq.REQ)
-        self.socket.setsockopt(zmq.RCVTIMEO, 10 * 1000) # 1000 ms = 1 seconds
-        self.socket.connect(f"tcp://{self.ZMQ_IP}:{self.ZMQ_PORT}")
-        print(f"ZeroMQ socket connected to {self.ZMQ_IP}:{self.ZMQ_PORT}")
+        # self.socket.setsockopt(zmq.RCVTIMEO, 10 * 1000) # 1000 ms = 1 seconds
+        # self.socket.connect(f"tcp://{self.ZMQ_IP}:{self.ZMQ_PORT}")
+        # print(f"ZeroMQ socket connected to {self.ZMQ_IP}:{self.ZMQ_PORT}")
 
     def _get_obs(self):
         return np.array([self.position, self.velocity], dtype=np.float32)
@@ -231,6 +231,25 @@ class AASEnv(gym.Env):
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)  # Handle seeding
+
+        # Close existing ZMQ connection if any
+        if self.socket:
+            self.socket.close()
+        # Restart Docker containers
+        try:
+            print("Restarting Simulation Container...")
+            self.simulation_container.restart()
+            print("Restarting Aircraft Containers...")
+            for air_cont in self.aircraft_containers:
+                air_cont.restart()
+        except Exception as e:
+            print(f"Error restarting containers: {e}")
+            raise e
+        # Establish ZeroMQ connection
+        self.socket = self.zmq_context.socket(zmq.REQ)
+        self.socket.setsockopt(zmq.RCVTIMEO, 10 * 1000) # 1000 ms = 1 seconds
+        self.socket.connect(f"tcp://{self.ZMQ_IP}:{self.ZMQ_PORT}")
+        print(f"ZeroMQ socket connected to {self.ZMQ_IP}:{self.ZMQ_PORT}")
 
         ###########################################################################################
         # ZeroMQ REQ/REP to the ROS2 sim ##########################################################
