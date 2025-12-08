@@ -40,7 +40,7 @@ class AASEnv(gym.Env):
             raise RuntimeError("Could not connect to the Docker daemon. Ensure Docker is running.") from e
         
         self.AUTOPILOT = "px4"
-        self.HEADLESS = True # Use False for debugging, set to True to disable GUI rendering
+        self.HEADLESS = False # Use False for visualization and debugging, set to True to disable the GUI windows
         self.CAMERA = True
         self.LIDAR = True
         #

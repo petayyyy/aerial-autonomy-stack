@@ -2,6 +2,7 @@ import numpy as np
 import gymnasium as gym
 import argparse
 import time
+import itertools
 
 from gymnasium.utils.env_checker import check_env
 from stable_baselines3 import PPO
@@ -25,9 +26,11 @@ def main():
     if args.mode == "step":
         obs, info = env.reset()
         print(f"Reset result -- Obs: {obs}")
-        for i in range(10):
-            user_input = input("Press Enter to step, 'r' then Enter to reset...")
+        for i in itertools.count():
+            user_input = input("Press Enter to step, 'r' then Enter to reset, 'q' then Enter to exit...")
             stripped_input = user_input.strip().lower()
+            if stripped_input and stripped_input in ('q', 'quit'):
+                break
             if stripped_input and stripped_input in ('r', 'reset'):
                 obs, info = env.reset()
                 print(f"\nReset result -- Obs: {obs}")
@@ -35,7 +38,7 @@ def main():
                 rnd_action = env.action_space.sample()
                 obs, reward, terminated, truncated, info = env.step(rnd_action)
                 print(f"\nStep {i} -- action: {rnd_action} result -- Obs: {obs}, Reward: {reward}, Terminated: {terminated}, Truncated: {truncated}")
-        print("\nInitial test steps complete. Closing environment.")
+        print("\nClosing environment.")
         env.close()
 
     elif args.mode == "speed":
@@ -57,6 +60,7 @@ def main():
 
     elif args.mode == "learn":
         print(f"TODO")
+        env.close()
         # try:
         #     # check_env(env) # Throws warning
         #     # check_env(env.unwrapped)
