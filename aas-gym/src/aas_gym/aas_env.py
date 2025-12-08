@@ -236,14 +236,13 @@ class AASEnv(gym.Env):
         # ZeroMQ REQ/REP to the ROS2 sim ##########################################################
         ###########################################################################################
         try:
+            self.socket.setsockopt(zmq.RCVTIMEO, 120 * 1000) # Temporarily increase timeout to 120s to reset the simulation
             reset = 9999.0 # A special action to reset the environment
-            # Serialize the action and send the REQ
-            action_payload = struct.pack('d', reset)
-            self.socket.send(action_payload)
-            # Wait for the REP (synchronous block) this call will block until a reply is received or it times out
-            reply_bytes = self.socket.recv()
-            # Deserialize
-            unpacked = struct.unpack('iI', reply_bytes) # i = int32 (sec), I = uint32 (nanosec)
+            action_payload = struct.pack('d', reset) # Serialize the action 
+            self.socket.send(action_payload) # Send the REQ
+            reply_bytes = self.socket.recv() # Wait for the REP (synchronous block) this call will block until a reply is received or it times out
+            self.socket.setsockopt(zmq.RCVTIMEO, 10 * 1000) # Restore standard timeout (10s) for stepping
+            unpacked = struct.unpack('iI', reply_bytes) # Deserialize: i = int32 (sec), I = uint32 (nanosec)
             sec, nanosec = unpacked
             # print(f"Clock update in reset(): {sec}.{nanosec}")
         except zmq.error.Again:
@@ -272,13 +271,10 @@ class AASEnv(gym.Env):
         # ZeroMQ REQ/REP to the ROS2 sim ##########################################################
         ###########################################################################################
         try:
-            # Serialize the action and send the REQ
-            action_payload = struct.pack('d', force)
-            self.socket.send(action_payload)
-            # Wait for the REP (synchronous block) this call will block until a reply is received or it times out
-            reply_bytes = self.socket.recv()
-            # Deserialize
-            unpacked = struct.unpack('iI', reply_bytes) # i = int32 (sec), I = uint32 (nanosec)
+            action_payload = struct.pack('d', force) # Serialize the action
+            self.socket.send(action_payload) # Send the REQ
+            reply_bytes = self.socket.recv() # Wait for the REP (synchronous block) this call will block until a reply is received or it times out
+            unpacked = struct.unpack('iI', reply_bytes) # Deserialize: i = int32 (sec), I = uint32 (nanosec)
             sec, nanosec = unpacked
             # print(f"Clock update in step(): {sec}.{nanosec}")
         except zmq.error.Again:

@@ -99,7 +99,7 @@ windows:
           done &&
           echo "Takeoff action initiated!" &&
           echo "Waiting for action server..." &&
-          until ros2 action send_goal /Drone${DRONE_ID}/orbit_action autopilot_interface_msgs/action/Orbit
+          until ros2 action send_goal /Drone<%= drone_id %>/orbit_action autopilot_interface_msgs/action/Orbit
           "{east: 100.0, north: 100.0, altitude: 60.0, radius: 100.0}"
           | grep "Goal accepted"; do 
             echo "Goal rejected or server not ready. Retrying in 1s..."

@@ -85,6 +85,7 @@ private:
     std::condition_variable clock_cv_;
     bool clock_ready_ = false;
     ClockPayload current_clock_;
+    double current_sim_time_ = 0.0;
 
     int step_size_;
 
@@ -93,9 +94,27 @@ private:
         
         current_clock_.sec = msg->clock.sec;
         current_clock_.nanosec = msg->clock.nanosec;
+        current_sim_time_ = msg->clock.sec + (msg->clock.nanosec * 1e-9);
         
         clock_ready_ = true;
-        clock_cv_.notify_one(); // Signal the waiting ZMQ thread
+        clock_cv_.notify_all(); // Notify waiting threads
+    }
+
+    void set_gazebo_pause(bool pause) {
+        gz::msgs::WorldControl req;
+        req.set_pause(pause);
+        gz::msgs::Boolean rep;
+        bool result;
+        gz_node_.Request(service_topic_, req, 1000, rep, result);
+    }
+
+    void step_gazebo() {
+        gz::msgs::WorldControl req;
+        req.set_pause(true);
+        req.set_multi_step(static_cast<unsigned int>(step_size_));
+        gz::msgs::Boolean rep;
+        bool result;
+        gz_node_.Request(service_topic_, req, 1000, rep, result);
     }
 
     void zmq_listener() {
@@ -116,32 +135,44 @@ private:
                     if (!res) continue;
                     double action = *static_cast<double*>(request.data()); // Get action (double)
 
-                    // 2. Reset ready flag and Publish Action
-                    {
-                        std::lock_guard<std::mutex> lock(clock_mutex_);
-                        clock_ready_ = false;
+                    bool received =  true; // Initialize and default to true
+
+                    // 2. Logic Dispatch
+                    if (std::abs(action - 9999.0) < 0.001) { // RESET MODE
+                        RCLCPP_INFO(this->get_logger(), "Received reset action (9999.0). Running unpaused...");
+
+                        // A. Unpause simulation
+                        set_gazebo_pause(false);
+                        // B. Wait loop
+                        while (rclcpp::ok() && running_) {
+                            std::unique_lock<std::mutex> lock(clock_mutex_);
+                            clock_cv_.wait(lock); // Wait for clock update
+                            if (current_sim_time_ >= 100.0) {
+                                break;
+                            }
+                        }
+                        // C. Pause simulation
+                        set_gazebo_pause(true);
+                        RCLCPP_INFO(this->get_logger(), "Initialization Complete. Paused.");
+
+                    } else { // STEP MODE
+                        // A. Publish Action
+                        auto ros_msg = std_msgs::msg::Float64();
+                        ros_msg.data = action;
+                        publisher_->publish(ros_msg);
+                        // B. Clear flag
+                        {
+                            std::lock_guard<std::mutex> lock(clock_mutex_);
+                            clock_ready_ = false;
+                        }
+                        // C. Trigger Step
+                        step_gazebo();
+                        // D. Wait for Result
+                        std::unique_lock<std::mutex> lock(clock_mutex_);
+                        received = clock_cv_.wait_for(lock, 2000ms, [this]{ return clock_ready_; }); // Wait up to 2 seconds for clock_ready_ to become true
                     }
-                    auto ros_msg = std_msgs::msg::Float64();
-                    ros_msg.data = action;
-                    publisher_->publish(ros_msg);
 
-                    // 3. Step Gazebo
-                    gz::msgs::WorldControl req;
-                    req.set_multi_step(static_cast<unsigned int>(step_size_));
-                    req.set_pause(true);
-                    gz::msgs::Boolean rep;
-                    bool result;
-                    unsigned int timeout = 1000; 
-                    bool executed = gz_node_.Request(service_topic_, req, timeout, rep, result);
-                    if (!executed) {
-                        RCLCPP_WARN(this->get_logger(), "Gazebo service call failed or timed out.");
-                    }
-
-                    // 4. Wait for ROS topic update
-                    std::unique_lock<std::mutex> lock(clock_mutex_);
-                    bool received = clock_cv_.wait_for(lock, 2000ms, [this]{ return clock_ready_; }); // Wait up to 2 seconds for clock_ready_ to become true
-
-                    // 5. Send Reply
+                    // 3. Send Reply
                     zmq::message_t reply(sizeof(ClockPayload));
                     if (received) {
                         // Copy struct directly into ZMQ message buffer
