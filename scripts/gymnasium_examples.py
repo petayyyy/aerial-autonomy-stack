@@ -21,9 +21,9 @@ def main():
         id="AASEnv-v0",
         entry_point=AASEnv,
     )
-    env = gym.make("AASEnv-v0", render_mode="human")
 
     if args.mode == "step":
+        env = gym.make("AASEnv-v0", render_mode="human")
         obs, info = env.reset()
         print(f"Reset result -- Obs: {obs}")
         for i in itertools.count():
@@ -42,7 +42,8 @@ def main():
         env.close()
 
     elif args.mode == "speed":
-        STEPS = 200
+        env = gym.make("AASEnv-v0", instance=1, render_mode="human") # ansi
+        STEPS = 10000
         print(f"Starting Speed Test ({STEPS} steps)")    
         obs, info = env.reset()
         start_time = time.time()        
@@ -60,7 +61,7 @@ def main():
 
     elif args.mode == "learn":
         print(f"TODO")
-        env.close()
+        # env = gym.make("AASEnv-v0")
         # try:
         #     # check_env(env) # Throws warning
         #     # check_env(env.unwrapped)

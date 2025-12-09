@@ -13,13 +13,13 @@ from docker.types import NetworkingConfig, EndpointConfig, DeviceRequest
 
 
 class AASEnv(gym.Env):
-    metadata = {"render_modes": ["human"]}
+    metadata = {"render_modes": ["human", "ansi"]}
 
-    def __init__(self, render_mode=None):
+    def __init__(self, instance: int=0, render_mode=None):
         super().__init__()
         
-        self.max_steps = 1000  # Max steps per episode
-        self.dt = 0.05         # Time step
+        self.max_steps = 1000000  # Max steps per episode
+        self.dt = 0.05            # Time step
         # Observation Space: [position, velocity], position is in [-1, 1], velocity is in [-5, 5]
         self.obs_low = np.array([-1.0, -5.0], dtype=np.float32)
         self.obs_high = np.array([1.0, 5.0], dtype=np.float32)
@@ -41,7 +41,7 @@ class AASEnv(gym.Env):
             raise RuntimeError("Could not connect to the Docker daemon. Ensure Docker is running.") from e
         
         self.AUTOPILOT = "px4"
-        self.HEADLESS = False # Use False for visualization and debugging, set to True to disable the GUI windows
+        self.HEADLESS = False if self.render_mode == "human" else True
         self.CAMERA = True
         self.LIDAR = True
         #
@@ -57,7 +57,7 @@ class AASEnv(gym.Env):
         self.GND_CONTAINER = False # Do NOT use the ground-image to run Zenoh (nor QGC)
         self.RTF = 0.0
         self.START_AS_PAUSED = True # Start the simulation paused and manually step with gz-sim WorldControl
-        self.INSTANCE = 0
+        self.INSTANCE = instance
         #
         sim_parts = self.SIM_SUBNET.split('.')
         self.SIM_SUBNET = f"{sim_parts[0]}.{int(sim_parts[1]) + self.INSTANCE}"
@@ -266,7 +266,7 @@ class AASEnv(gym.Env):
             self.socket.setsockopt(zmq.RCVTIMEO, 10 * 1000) # Restore standard timeout (10s) for stepping
             unpacked = struct.unpack('iI', reply_bytes) # Deserialize: i = int32 (sec), I = uint32 (nanosec)
             sec, nanosec = unpacked
-            # print(f"Clock update in reset(): {sec}.{nanosec}")
+            print(f"Clock update in reset(): {sec}.{nanosec}")
         except zmq.error.Again:
             print("ZMQ Error: Reply from container timed out.")
         except ValueError:
@@ -281,7 +281,7 @@ class AASEnv(gym.Env):
         ###########################################################################################
         self.step_count = 0
         
-        if self.render_mode == "human":
+        if self.render_mode == "ansi":
             self._render_frame()
 
         return self._get_obs(), self._get_info()
@@ -298,7 +298,7 @@ class AASEnv(gym.Env):
             reply_bytes = self.socket.recv() # Wait for the REP (synchronous block) this call will block until a reply is received or it times out
             unpacked = struct.unpack('iI', reply_bytes) # Deserialize: i = int32 (sec), I = uint32 (nanosec)
             sec, nanosec = unpacked
-            # print(f"Clock update in step(): {sec}.{nanosec}")
+            print(f"Clock update in step(): {sec}.{nanosec}")
         except zmq.error.Again:
             print("ZMQ Error: Reply from container timed out.")
         except ValueError:
@@ -330,13 +330,13 @@ class AASEnv(gym.Env):
         info = self._get_info()
         
         # Handle rendering
-        if self.render_mode == "human":
+        if self.render_mode == "ansi":
             self._render_frame()
 
         return obs, reward, terminated, truncated, info
 
     def render(self):
-        if self.render_mode == "human":
+        if self.render_mode == "ansi":
             self._render_frame()
 
     def _render_frame(self):
@@ -351,7 +351,7 @@ class AASEnv(gym.Env):
         print(f"\r{''.join(display)}  Pos: {self.position:6.3f}, Vel: {self.velocity:6.3f}", end="")
 
     def close(self):
-        if self.render_mode == "human":
+        if self.render_mode == "ansi":
             print()  # Add a newline after the final render
         
         # Docker clean-up (auto_remove=True in the creation step handles removal after stop)
