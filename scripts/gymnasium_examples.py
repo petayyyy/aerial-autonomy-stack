@@ -23,7 +23,7 @@ def main():
     )
 
     if args.mode == "step":
-        env = gym.make("AASEnv-v0", render_mode="human")
+        env = gym.make("AASEnv-v0", gym_freq_hz=1, render_mode="human")
         obs, info = env.reset()
         print(f"Reset result -- Obs: {obs}")
         for i in itertools.count():
@@ -42,8 +42,10 @@ def main():
         env.close()
 
     elif args.mode == "speed":
-        env = gym.make("AASEnv-v0", instance=1, render_mode="human") # ansi
-        STEPS = 10000
+        CTRL_FREQ_HZ = 50
+        env = gym.make("AASEnv-v0", instance=1, gym_freq_hz=CTRL_FREQ_HZ, render_mode="ansi")
+        TIME_TO_SIMULATE_SEC = 200
+        STEPS = TIME_TO_SIMULATE_SEC * CTRL_FREQ_HZ
         print(f"Starting Speed Test ({STEPS} steps)")    
         obs, info = env.reset()
         start_time = time.time()        
@@ -53,10 +55,10 @@ def main():
             if terminated or truncated:
                 obs, info = env.reset()
         total_time = time.time() - start_time
-        print(f"\nTest completed in: {total_time} s")
+        print(f"\nTest completed in: {(total_time):.2f} sec")
         print(f"Average Step Time: {(total_time / STEPS) * 1000:.3f} ms")
+        print(f"Speedup: {(TIME_TO_SIMULATE_SEC / total_time):.2f}x wall-clock")
         print(f"Throughput: {(STEPS / total_time):.2f} steps/second")
-        print(f"Time for 1,000,000 steps: {((total_time * (1000000/STEPS))/3600):.2f} hours")
         env.close()
 
     elif args.mode == "learn":

@@ -16,7 +16,10 @@
   simulated_time = ENV.fetch('SIMULATED_TIME', 'false') == 'true'
   rtf = ENV.fetch('RTF', '1.0').to_f
   start_as_paused = ENV.fetch('START_AS_PAUSED', 'false') == 'true'
+
   gymnasium = ENV.fetch('GYMNASIUM', 'false') == 'true'
+  gym_freq_hz = ENV.fetch('GYM_FREQ_HZ', 50).to_i
+  gym_init_duration = ENV.fetch('GYM_INIT_DURATION', '80.0').to_f
 
   drones = []
   num_quads.times { |i| drones << { type: 'quad', index: i } }
@@ -29,6 +32,11 @@
   end
   rtf_string = "<real_time_factor>%g</real_time_factor>" % speedup
 
+  # Compute step size for gymnasium based on physics frequency in the world SDF files
+  physics_freq_hz = (autopilot == 'px4') ? 250 : 500
+  physics_dt = (autopilot == 'px4') ? 0.004 : 0.002
+  gym_step_size = (physics_freq_hz / gym_freq_hz).to_i
+  gym_step_size = 1 if gym_step_size < 1
 %>
 
 name: sim
@@ -180,5 +188,5 @@ windows:
   - zmq_bridge:
       layout: even-horizontal
       panes:
-        - ros2 run zmq_bridge_cpp zmq_bridge_node --ros-args -p step_size:=<%= autopilot == 'px4' ? 5 : 10 %> -p physics_dt:=<%= autopilot == 'px4' ? 0.004 : 0.002 %>
+        - ros2 run zmq_bridge_cpp zmq_bridge_node --ros-args -p init_duration:=<%= gym_init_duration %> -p step_size:=<%= gym_step_size %> -p physics_dt:=<%= physics_dt %>
   <% end %>

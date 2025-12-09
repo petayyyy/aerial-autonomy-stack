@@ -289,8 +289,8 @@ Use as:
 ```sh
 conda activate aas                                    # If using Anaconda
 cd aerial-autonomy-stack/scripts
-python3 gymnasium_examples.py --mode step             # Manually step the simulation
-python3 gymnasium_examples.py --mode speed            # Check the simulation throughput
+python3 gymnasium_examples.py --mode step             # Manually step the simulation at 1Hz
+python3 gymnasium_examples.py --mode speed            # Check the simulation throughput at 50Hz
 ```
 
 <!--

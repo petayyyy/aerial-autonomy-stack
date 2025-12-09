@@ -99,7 +99,7 @@ windows:
           done &&
           echo "Takeoff action initiated! Waiting for offboard action server..." &&
           until ros2 action send_goal /Drone<%= drone_id %>/offboard_action autopilot_interface_msgs/action/Offboard
-          "{offboard_setpoint_type: 1, max_duration_sec: 600.0}"
+          "{offboard_setpoint_type: 1, max_duration_sec: 1200.0}"
           | grep "Goal accepted"; do
             echo "Goal rejected or server not ready. Retrying in 1s..."
             sleep 1

@@ -15,10 +15,18 @@ from docker.types import NetworkingConfig, EndpointConfig, DeviceRequest
 class AASEnv(gym.Env):
     metadata = {"render_modes": ["human", "ansi"]}
 
-    def __init__(self, instance: int=0, render_mode=None):
+    def __init__(self,
+                    instance: int=0,
+                    gym_freq_hz: int=50,
+                    render_mode=None):
         super().__init__()
-        
-        self.max_steps = 1000000  # Max steps per episode
+
+        self.GYM_FREQ_HZ = gym_freq_hz
+        self.GYM_INIT_DURATION = 80.0  # Seconds to run unpaused during reset (seconds)
+        self.MAX_EPISODE_LENGTH_SEC = 300.0  # Max episode length in seconds (excluding init duration)
+
+        self.max_steps = int(self.MAX_EPISODE_LENGTH_SEC*self.GYM_FREQ_HZ)  # Max steps per episode
+
         self.dt = 0.05            # Time step
         # Observation Space: [position, velocity], position is in [-1, 1], velocity is in [-5, 5]
         self.obs_low = np.array([-1.0, -5.0], dtype=np.float32)
@@ -151,6 +159,8 @@ class AASEnv(gym.Env):
                 "GND_CONTAINER": str(self.GND_CONTAINER).lower(),
                 "ROS_DOMAIN_ID": self.SIM_ID,
                 "GYMNASIUM" : "true",
+                "GYM_FREQ_HZ" : self.GYM_FREQ_HZ,
+                "GYM_INIT_DURATION" : self.GYM_INIT_DURATION,
             }
         )
         print(f"Connecting {self.SIM_CONT_NAME} to {self.SIM_NET_NAME}...")
@@ -266,7 +276,7 @@ class AASEnv(gym.Env):
             self.socket.setsockopt(zmq.RCVTIMEO, 10 * 1000) # Restore standard timeout (10s) for stepping
             unpacked = struct.unpack('iI', reply_bytes) # Deserialize: i = int32 (sec), I = uint32 (nanosec)
             sec, nanosec = unpacked
-            print(f"Clock update in reset(): {sec}.{nanosec}")
+            # print(f"Clock update in reset(): {sec}.{nanosec}")
         except zmq.error.Again:
             print("ZMQ Error: Reply from container timed out.")
         except ValueError:
@@ -279,6 +289,7 @@ class AASEnv(gym.Env):
         ###########################################################################################
         ###########################################################################################
         ###########################################################################################
+
         self.step_count = 0
         
         if self.render_mode == "ansi":
@@ -298,7 +309,7 @@ class AASEnv(gym.Env):
             reply_bytes = self.socket.recv() # Wait for the REP (synchronous block) this call will block until a reply is received or it times out
             unpacked = struct.unpack('iI', reply_bytes) # Deserialize: i = int32 (sec), I = uint32 (nanosec)
             sec, nanosec = unpacked
-            print(f"Clock update in step(): {sec}.{nanosec}")
+            # print(f"Clock update in step(): {sec}.{nanosec}")
         except zmq.error.Again:
             print("ZMQ Error: Reply from container timed out.")
         except ValueError:
@@ -317,8 +328,8 @@ class AASEnv(gym.Env):
         ###########################################################################################
         ###########################################################################################
         ###########################################################################################
-        self.step_count += 1
         
+        self.step_count += 1
         # Calculate reward: Negative distance from the goal (position 0)
         reward = float(-np.abs(self.position))
         # Check for termination

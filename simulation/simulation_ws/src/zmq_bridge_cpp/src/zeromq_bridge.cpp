@@ -37,6 +37,8 @@ public:
         this->declare_parameter("physics_dt", 0.004); // Size of the physics timestep in seconds (4ms for PX4, 2ms for ArduPilot)
         physics_dt_ = this->get_parameter("physics_dt").as_double();
         RCLCPP_INFO(this->get_logger(), "Config: step size = %d, physics dt = %.4f", step_size_, physics_dt_);
+        this->declare_parameter("init_duration", 80.0); // Duration to run unpaused during reset (seconds)
+        init_duration_ = this->get_parameter("init_duration").as_double();
         
         // 1. ZMQ Setup
         socket_.bind("tcp://*:5555"); // '*' binds to all interfaces (equivalent to 0.0.0.0)
@@ -91,6 +93,7 @@ private:
 
     int step_size_;
     double physics_dt_;
+    double init_duration_;
 
     void clock_callback(const rosgraph_msgs::msg::Clock::SharedPtr msg) {
         std::lock_guard<std::mutex> lock(clock_mutex_);
@@ -150,7 +153,7 @@ private:
                         while (rclcpp::ok() && running_) {
                             std::unique_lock<std::mutex> lock(clock_mutex_);
                             clock_cv_.wait(lock); // Wait for clock update
-                            if (current_sim_time_ >= 80.0) {
+                            if (current_sim_time_ >= init_duration_) {
                                 break;
                             }
                         }
