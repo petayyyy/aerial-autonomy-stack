@@ -24,19 +24,24 @@ class AASEnv(gym.Env):
         self.GYM_FREQ_HZ = gym_freq_hz
         self.GYM_INIT_DURATION = 80.0  # Seconds to run unpaused during reset (seconds)
         self.MAX_EPISODE_LENGTH_SEC = 300.0  # Max episode length in seconds (excluding init duration)
+        
+        # [DUMMY] Action Space: [/action] between -1.0 and 1.0
+        self.action_space = gym.spaces.Box(
+            low=-1.0,
+            high=1.0,
+            shape=(1,), dtype=np.float32
+        )
+        # [DUMMY] Observation Space is the Gazebo Sim /clocl [seconds, nanoseconds]
+        self.observation_space = gym.spaces.Box(
+            low=np.array([0.0, 0.0], dtype=np.float64),
+            high=np.array([np.inf, 1e9], dtype=np.float64),
+            dtype=np.float64
+        )
+        # Initialize storage for the clock
+        self.sim_sec = 0.0
+        self.sim_nanosec = 0.0
 
         self.max_steps = int(self.MAX_EPISODE_LENGTH_SEC*self.GYM_FREQ_HZ)  # Max steps per episode
-
-        self.dt = 0.05            # Time step
-        # Observation Space: [position, velocity], position is in [-1, 1], velocity is in [-5, 5]
-        self.obs_low = np.array([-1.0, -5.0], dtype=np.float32)
-        self.obs_high = np.array([1.0, 5.0], dtype=np.float32)
-        self.observation_space = gym.spaces.Box(low=self.obs_low, high=self.obs_high, dtype=np.float32)
-        # Action Space: [force] between -1.0 and 1.0
-        self.action_space = gym.spaces.Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32)
-        # Internal state
-        self.position = 0.0
-        self.velocity = 0.0
         self.step_count = 0
         
         # Rendering
@@ -235,10 +240,10 @@ class AASEnv(gym.Env):
         # print(f"ZeroMQ socket connected to {self.ZMQ_IP}:{self.ZMQ_PORT}")
 
     def _get_obs(self):
-        return np.array([self.position, self.velocity], dtype=np.float32)
+        return np.array([self.sim_sec, self.sim_nanosec], dtype=np.float64)
 
     def _get_info(self):
-        return {"position": self.position, "velocity": self.velocity}
+        return {"sim_time_sec": self.sim_sec, "sim_time_nanosec": self.sim_nanosec}
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)  # Handle seeding
@@ -263,7 +268,6 @@ class AASEnv(gym.Env):
         self.socket.setsockopt(zmq.RCVTIMEO, 10 * 1000) # 1000 ms = 1 seconds
         self.socket.connect(f"tcp://{self.ZMQ_IP}:{self.ZMQ_PORT}")
         print(f"ZeroMQ socket connected to {self.ZMQ_IP}:{self.ZMQ_PORT}")
-
         ###########################################################################################
         # ZeroMQ REQ/REP to the ROS2 sim ##########################################################
         ###########################################################################################
@@ -275,21 +279,15 @@ class AASEnv(gym.Env):
             reply_bytes = self.socket.recv() # Wait for the REP (synchronous block) this call will block until a reply is received or it times out
             self.socket.setsockopt(zmq.RCVTIMEO, 10 * 1000) # Restore standard timeout (10s) for stepping
             unpacked = struct.unpack('iI', reply_bytes) # Deserialize: i = int32 (sec), I = uint32 (nanosec)
-            sec, nanosec = unpacked
-            # print(f"Clock update in reset(): {sec}.{nanosec}")
+            self.sim_sec, self.sim_nanosec = unpacked
+            self.start_sim_sec = float(self.sim_sec) + (float(self.sim_nanosec) * 1e-9)
         except zmq.error.Again:
             print("ZMQ Error: Reply from container timed out.")
         except ValueError:
             print("ZMQ Error: Reply format error. Received garbage state.")
         ###########################################################################################
-        # Reset state to a random position near the center ########################################
-        ###########################################################################################
-        self.position = self.np_random.uniform(low=-0.8, high=0.8)
-        self.velocity = 0.0
         ###########################################################################################
         ###########################################################################################
-        ###########################################################################################
-
         self.step_count = 0
         
         if self.render_mode == "ansi":
@@ -299,7 +297,6 @@ class AASEnv(gym.Env):
 
     def step(self, action):
         force = action[0]
-
         ###########################################################################################
         # ZeroMQ REQ/REP to the ROS2 sim ##########################################################
         ###########################################################################################
@@ -309,29 +306,17 @@ class AASEnv(gym.Env):
             reply_bytes = self.socket.recv() # Wait for the REP (synchronous block) this call will block until a reply is received or it times out
             unpacked = struct.unpack('iI', reply_bytes) # Deserialize: i = int32 (sec), I = uint32 (nanosec)
             sec, nanosec = unpacked
-            # print(f"Clock update in step(): {sec}.{nanosec}")
+            self.sim_sec, self.sim_nanosec = unpacked
         except zmq.error.Again:
             print("ZMQ Error: Reply from container timed out.")
         except ValueError:
             print("ZMQ Error: Reply format error. Received garbage state.")
         ###########################################################################################
-        # Simple Euler integration ################################################################
-        ###########################################################################################
-        self.velocity += force * self.dt
-        self.velocity *= 0.99  # Add some damping
-        self.position += self.velocity * self.dt
-        # Clip position to the bounds [-1.0, 1.0]
-        self.position = np.clip(self.position, -1.0, 1.0)
-        # If it hits a wall, dampen the velocity (like a bounce)
-        if self.position == -1.0 or self.position == 1.0:
-            self.velocity *= -0.5
         ###########################################################################################
         ###########################################################################################
-        ###########################################################################################
-        
         self.step_count += 1
-        # Calculate reward: Negative distance from the goal (position 0)
-        reward = float(-np.abs(self.position))
+        # Calculate reward
+        reward = float(-1.0)
         # Check for termination
         terminated = False  # This is a continuing task, never "terminates"
         # Check for truncation (episode ends due to time limit)
@@ -351,15 +336,19 @@ class AASEnv(gym.Env):
             self._render_frame()
 
     def _render_frame(self):
-        # Scale position from [-1, 1] to a 40-char width
-        pos_int = int((self.position + 1.0) / 2.0 * 40)     
-        # Create the display string
-        display = ['-'] * 41
-        display[pos_int] = 'O'  # The agent
-        if pos_int != 20:
-            display[20] = '|'       # The target (0.0)   
-        # Print to console
-        print(f"\r{''.join(display)}  Pos: {self.position:6.3f}, Vel: {self.velocity:6.3f}", end="")
+        bar_width = 40        
+        # current_time = self.sim_sec + (self.sim_nanosec * 1e-9) - self.GYM_INIT_DURATION
+        # progress = min(max(current_time / self.MAX_EPISODE_LENGTH_SEC, 0.0), 1.0)        
+        # filled_len = int(bar_width * progress)
+        # bar = '=' * filled_len + '-' * (bar_width - filled_len)        
+        # print(f"\r[{bar}] {current_time:6.2f}s / {self.MAX_EPISODE_LENGTH_SEC:.0f}s", end="")
+        current_abs_time = self.sim_sec + (self.sim_nanosec * 1e-9)
+        start_time = getattr(self, 'start_sim_sec', 0.0)
+        episode_time = current_abs_time - start_time
+        progress = min(max(episode_time / self.MAX_EPISODE_LENGTH_SEC, 0.0), 1.0)
+        filled_len = int(bar_width * progress)
+        bar = '=' * filled_len + '-' * (bar_width - filled_len)
+        print(f"\r[{bar}] {episode_time:6.2f}s / {self.MAX_EPISODE_LENGTH_SEC:.0f}s", end="")
 
     def close(self):
         if self.render_mode == "ansi":
