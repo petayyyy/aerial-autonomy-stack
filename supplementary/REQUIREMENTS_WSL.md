@@ -1,12 +1,10 @@
 # Pre-installation Steps for AAS on Windows 11
 
-![wsl](https://github.com/user-attachments/assets/e58d039c-b23b-43a0-9957-d18579e652ec)
+> These instructions are tested using Windows 11 Enterprise 23H2 (OS build 22631.6199) on an i7-11 with 32GB RAM and RTX A2000
 
 ## Setup WSLg for Ubuntu 22
 
 > The latest Windows Subsystem for Linux (WSL2) and WSLg (WSL2 extension with GUI capabilities) are included in Windows 11
->
-> These instructions are tested using Windows 11 Enterprise 23H2 (OS build 22631.6199) on an i7-11 with 32GB RAM and RTX A2000
 
 - If WSL is not enabled, use "Turn Windows features on or off" to checkbox [Hyper-V, Windows Hypervisor Platform, and Windows Subsystem for Linux](https://github.com/microsoft/WSL/issues/9521#issuecomment-2385289848)
 - From PowerShell, update and default to WSL2 `wsl --update`, `wsl --set-default-version 2`
@@ -150,3 +148,5 @@ docker login nvcr.io                # To be able to reliably pull NVIDIA base im
 Username:                           # type $oauthtoken
 Password:                           # copy and paste the API key and press enter to pull base images from nvcr.io/
 ```
+
+![wsl](https://github.com/user-attachments/assets/e58d039c-b23b-43a0-9957-d18579e652ec)

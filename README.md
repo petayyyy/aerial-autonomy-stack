@@ -89,7 +89,6 @@ Optionally, add or disable **wind effects**, in the `Simulation`'s Xterm termina
 
 ```sh
 python3 /aas/simulation_resources/scripts/gz_wind.py --from_west 0.0 --from_south 3.0
-
 python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 ```
 
@@ -104,7 +103,7 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 > # Land (at home) action (quads and VTOLs)
 > cancellable_action "ros2 action send_goal /Drone${DRONE_ID}/land_action autopilot_interface_msgs/action/Land '{landing_altitude: 60.0, vtol_transition_heading: 60.0}'"
 >
-> # Orbit (quads and VTOLs)
+> # Orbit action (quads and VTOLs)
 > cancellable_action "ros2 action send_goal /Drone${DRONE_ID}/orbit_action autopilot_interface_msgs/action/Orbit '{east: 500.0, north: 0.0, altitude: 150.0, radius: 200.0}'"
 >
 > # Reposition service (quads only)
@@ -113,7 +112,7 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 > # Offboard action (PX4 quads and VTOLs offboard_setpoint_type: attitude = 0, rates = 1, trajectory = 2; ArduPilot quads offboard_setpoint_type: velocity = 3, acceleration = 4) 
 > cancellable_action "ros2 action send_goal /Drone${DRONE_ID}/offboard_action autopilot_interface_msgs/action/Offboard '{offboard_setpoint_type: 1, max_duration_sec: 5.0}'"
 >
-> # SetSpeed Service (always limited by the autopilot params, for quads applies from the next command, not effective on ArduPilot VTOLs) 
+> # SetSpeed service (always limited by the autopilot params, for quads applies from the next command, not effective on ArduPilot VTOLs) 
 > ros2 service call /Drone${DRONE_ID}/set_speed autopilot_interface_msgs/srv/SetSpeed '{speed: 3.0}' 
 > ```
 > To create a new mission, implement [`MissionNode.conops_callback()`](/aircraft/aircraft_ws/src/mission/mission/mission_node.py)

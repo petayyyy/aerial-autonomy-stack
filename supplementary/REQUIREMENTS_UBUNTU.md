@@ -59,24 +59,6 @@ newgrp docker                       # Reboot
 docker run hello-world              # Test Docker is working without sudo
 ```
 
-**Optionally**, increase the swap size and, if you have an SSD, decrease swappiness
-
-```sh
-# Increase Ubuntu's default 2GB swap memory to 8GB
-sudo swapon --show
-sudo swapoff /swapfile
-sudo fallocate -l 8G /swapfile
-sudo mkswap /swapfile
-sudo swapon /swapfile
-sudo swapon --show
-
-# Decrease Ubuntu's default swappiness of 60 to 10 (to reduce SSD wear)
-cat /proc/sys/vm/swappiness
-echo 'vm.swappiness=10' | sudo tee -a /etc/sysctl.conf
-sudo sysctl -p
-cat /proc/sys/vm/swappiness
-```
-
 ## Install NVIDIA Container Toolkit
 
 ```sh
@@ -102,6 +84,26 @@ sudo systemctl restart docker
 docker info | grep -i runtime       # Check `nvidia` runtime is available
 
 docker run --rm --gpus all nvcr.io/nvidia/cuda:12.2.0-base-ubuntu22.04 nvidia-smi        # Test nvidia-smi works in a container with CUDA
+```
+
+## Optimize Memory Usage
+
+**Optionally**, increase the swap size and, if you have an SSD, decrease swappiness
+
+```sh
+# Increase Ubuntu's default 2GB swap memory to 8GB
+sudo swapon --show
+sudo swapoff /swapfile
+sudo fallocate -l 8G /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+sudo swapon --show
+
+# Decrease Ubuntu's default swappiness of 60 to 10 (to reduce SSD wear)
+cat /proc/sys/vm/swappiness
+echo 'vm.swappiness=10' | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
+cat /proc/sys/vm/swappiness
 ```
 
 ## Troubleshoot
