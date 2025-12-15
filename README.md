@@ -48,14 +48,14 @@ cd aerial-autonomy-stack/scripts/
 ```
 
 <div align="right">
-  <a href="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/weekly-simulation-amd64-build.yml">
-    <img src="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/weekly-simulation-amd64-build.yml/badge.svg" alt="simulation-image amd64">
+  <a href="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/simulation-amd64-build.yml">
+    <img src="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/simulation-amd64-build.yml/badge.svg" alt="simulation-image amd64">
   </a>
-  <a href="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/weekly-ground-amd64-build.yml">
-    <img src="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/weekly-ground-amd64-build.yml/badge.svg" alt="ground-image amd64">
+  <a href="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/ground-amd64-build.yml">
+    <img src="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/ground-amd64-build.yml/badge.svg" alt="ground-image amd64">
   </a>
-  <a href="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/weekly-aircraft-amd64-build.yml">
-    <img src="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/weekly-aircraft-amd64-build.yml/badge.svg" alt="aircraft-image amd64">
+  <a href="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/aircraft-amd64-build.yml">
+    <img src="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/aircraft-amd64-build.yml/badge.svg" alt="aircraft-image amd64">
   </a>
 </div>
 
@@ -325,8 +325,8 @@ cd aerial-autonomy-stack/scripts/
 ```
 
 <div align="right">
-  <a href="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/weekly-aircraft-arm64-build.yml">
-    <img src="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/weekly-aircraft-arm64-build.yml/badge.svg" alt="aircraft-image arm64">
+  <a href="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/aircraft-arm64-build.yml">
+    <img src="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/aircraft-arm64-build.yml/badge.svg" alt="aircraft-image arm64">
   </a>
 </div>
 
