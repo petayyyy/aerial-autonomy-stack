@@ -29,7 +29,7 @@
 
 https://github.com/user-attachments/assets/57e5bc91-8bee-4bae-8f81-a9aacef471e7
 
-## Architectural Overview
+## Overview
 
 ```mermaid
 graph LR
@@ -87,7 +87,7 @@ linkStyle 7 stroke:red,stroke-width:4px;
 ```
 
 <details>
-<summary>AAS Repo Structure <i>(click to expand)</i></summary>
+<summary>Repo Structure <i>(click to expand)</i></summary>
 
 ```sh
 aerial-autonomy-stack
