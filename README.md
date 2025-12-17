@@ -87,7 +87,7 @@ flowchart LR
             sitl["[N x] PX4 or <br/> ArduPilot SITL"]:::resource
             gz[Gazebo Sim]:::resource
             
-            sitl <--> |"gz_bridge OR ardupilot_gazebo"| gz
+            sitl <--> |"gz_bridge or ardupilot_gazebo"| gz
         end
 
     end
