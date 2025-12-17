@@ -1,6 +1,6 @@
 # aerial-autonomy-stack
 
-*Aerial autonomy stack* (AAS) is the all-in-one software stack to:
+*Aerial autonomy stack* (AAS) is an all-in-one software stack to:
 
 1. **Develop** multi-drone autonomy—with ROS2, PX4, and ArduPilot
 2. **Simulate** faster-than-real-time perception and control—with YOLOv8 and 3D LiDAR 
@@ -28,6 +28,125 @@
 </details>
 
 https://github.com/user-attachments/assets/57e5bc91-8bee-4bae-8f81-a9aacef471e7
+
+## Architectural Overview
+
+```mermaid
+graph LR
+
+    subgraph air ["[N#nbsp;x]#nbsp;aircraft#nbsp;container#nbsp;(amd64/arm64)"]
+        offboard_control(offboard_control)
+        autopilot_interface(autopilot_interface)
+        mission(mission)
+        state_sharing(state_sharing)
+        yolo_py(yolo_py)
+        kiss_icp(kiss_icp)
+        zenoh_air(zenoh-bridge-ros2dds)
+        ap_link("uxrce_dds_agent <br/>OR mavros")
+
+        mission --> autopilot_interface
+        yolo_py --> offboard_control
+        kiss_icp --> offboard_control
+        offboard_control -- /reference --> autopilot_interface
+        ap_link --> state_sharing
+        ap_link <--> autopilot_interface
+        state_sharing -- /state_sharing_drone_n --> zenoh_air
+
+    end
+
+    subgraph gnd ["ground#nbsp;container#nbsp;(amd64)"]
+        ground_system(ground_system)
+        qgc(QGroundControl)
+        zenoh_gnd(zenoh-bridge-ros2dds)
+
+        zenoh_gnd <-- TCP [AIR_NET] --> zenoh_air
+        ground_system -- /tracks --> zenoh_gnd
+    end
+
+    subgraph sim ["simulation#nbsp;container#nbsp;(amd64)"]
+        sitl("[N x] PX4 OR <br/>ArduPilot SITL")
+        gz(Gazebo Sim)
+
+        gz -- gz_gst_bridge [SIM_NET] --> yolo_py
+        gz -- /lidar_points [SIM_NET] --> kiss_icp
+        sitl <-- gz_bridge OR adupilot_gazebo --> gz
+        sitl <-- MAVLink [SIM_NET] --> qgc 
+        sitl -- MAVLink [SIM_NET] --> ground_system
+        sitl <-- UDP [SIM_NET] --> ap_link
+    end
+
+style air fill:#e8b7b5,stroke:#333,stroke-width:0px
+style gnd fill:#7cbb8b,stroke:#333,stroke-width:0px
+style sim fill:#b5d4f1,stroke:#333,stroke-width:0px
+
+classDef default fill:#0,stroke:#333,stroke-width:2px,color:black;
+linkStyle default stroke:#fffff,stroke-width:2px;
+
+linkStyle 9,10,12,13,14 stroke:blue,stroke-width:4px;
+linkStyle 7 stroke:red,stroke-width:4px;
+```
+
+<details>
+<summary>AAS Repo Structure <i>(click to expand)</i></summary>
+
+```sh
+aerial-autonomy-stack
+│
+├── aas-gym
+│   └── src
+│       └── aas_gym
+│           └── aas_env.py                          # aerial-autonomy-stack as a Gymnasium environment
+│
+├── aircraft
+│   ├── aircraft_ws
+│   │   └── src
+│   │       ├── autopilot_interface                 # Ardupilot/PX4 high-level actions (Takeoff, Orbit, Offboard, Land)
+│   │       ├── mission                             # Orchestrator of the actions in `autopilot_interface` 
+│   │       ├── offboard_control                    # Low-level references for the Offboard action in `autopilot_interface` 
+│   │       ├── state_sharing                       # Publisher of the `/state_sharing_drone_N` topic broadcasted by Zenoh
+│   │       └── yolo_py                             # GStreamer video acquisition and publisher of YOLO bounding boxes
+│   │
+│   └── aircraft.yml.erb                            # Aircraft docker tmux entrypoint
+│
+├── ground
+│   ├── ground_ws
+│   │   └── src
+│   │       └── ground_system                       # Publisher of topic `/tracks` broadcasted by Zenoh
+│   │
+│   └── ground.yml.erb                              # Ground docker tmux entrypoint
+│
+├── scripts
+│   ├── docker
+│   │   ├── Dockerfile.aircraft                     # Docker image for aircraft simulation and deployment
+│   │   ├── Dockerfile.ground                       # Docker image for ground system simulation and deployment
+│   │   └── Dockerfile.simulation                   # Docker image for SITL and HITL simulation
+│   │
+│   ├── deploy_build.sh                             # Build `Dockerfile.aircraft` for arm64/Orin
+│   ├── deploy_run.sh                               # Start the aircraft docker on arm64/Orin or the ground docker on amd64 (deploy or HITL)
+│   │
+│   ├── gym_run.py                                  # Examples for the Gymnasium aas-gym package
+│   │
+│   ├── sim_build.sh                                # Build all dockerfiles for amd64/simulation
+│   └── sim_run.sh                                  # Start the simulation (SITL or HITL)
+│
+└── simulation
+    ├── simulation_resources
+    │   ├── aircraft_models
+    │   │   ├── alti_transition_quad                # ArduPilot VTOL model
+    │   │   ├── iris_with_ardupilot                 # ArduPilot quad model
+    │   │   ├── sensor_camera                       # Camera model
+    │   │   ├── sensor_lidar                        # LiDAR model
+    │   │   ├── standard_vtol                       # PX4 VTOL model
+    │   │   └── x500                                # PX4 quad model
+    │   └── simulation_worlds
+    │       ├── apple_orchard.sdf
+    │       ├── impalpable_greyness.sdf
+    │       ├── shibuya_crossing.sdf
+    │       └── swiss_town.sdf
+    │
+    └── simulation.yml.erb                          # Simulation docker tmux entrypoint
+```
+</details>
 
 ## Installation
 
@@ -118,6 +237,41 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 > To create a new mission, implement [`MissionNode.conops_callback()`](/aircraft/aircraft_ws/src/mission/mission/mission_node.py)
 > </details>
 > <details>
+> <summary><b>Development within Live Containers</b> <i>(click to expand)</i></summary>
+> 
+> Launching the `sim_run.sh` script with `DEV=true`, does **not** start the simulation and mounts folders `[aircraft|ground|simulation]_resources`, `[aircraft|ground]_ws/src` as volumes to more easily track, commit, push changes while building and testing them within the containers:
+> 
+> ```sh
+> cd aerial-autonomy-stack/scripts/
+> DEV=true ./sim_run.sh                                                                       # Starts one simulation-image, one ground-image, and one aircraft-image where the *_resources/ and *_ws/src/ folders are mounted from the host
+> ```
+> 
+> To build changes—**made on the host**—in the `Ground` or `QUAD` Xterm terminal:
+> 
+> ```sh
+> cd /aas/aircraft_ws/                                                                        # Or cd /aas/ground_ws/
+> colcon build --symlink-install
+> ```
+> 
+> To start the simulation, in the `QUAD` Xterm terminal:
+> 
+> ```sh
+> tmuxinator start -p /aas/aircraft.yml.erb
+> ```
+> 
+> In the `Ground` Xterm terminal:
+> ```sh
+> tmuxinator start -p /aas/ground.yml.erb
+> ```
+> 
+> In the `Simulation` Xterm terminal:
+> ```sh
+> tmuxinator start -p /aas/simulation.yml.erb
+> ```
+> 
+> To end the simulation, in each terminal detach Tmux with `Ctrl + b`, then `d`; kill all lingering processes with `tmux kill-server && pkill -f gz`
+> </details>
+> <details>
 > <summary><b>Tmux shortcuts</b> to navigate the windows/panes in Xterm <i>(click to expand)</i></summary>
 >
 > ```sh
@@ -165,105 +319,6 @@ Included `WORLD`s:
 - `impalpable_greyness`, (default) an empty world with simple shapes
 - `shibuya_crossing`, a 3D world adapted from [cgtrader](https://www.cgtrader.com/)
 - `swiss_town`, a photogrammetry world courtesy of [Pix4D / pix4d.com](https://support.pix4d.com/hc/en-us/articles/360000235126)
-
-> [!TIP]
-> <details>
-> <summary>AAS Structure <i>(click to expand)</i></summary>
-> 
-> ```sh
-> aerial-autonomy-stack
-> │
-> ├── aas-gym
-> │   └── src
-> │       └── aas_gym
-> │           └── aas_env.py                          # aerial-autonomy-stack as a Gymnasium environment
-> │
-> ├── aircraft
-> │   ├── aircraft_ws
-> │   │   └── src
-> │   │       ├── autopilot_interface                 # Ardupilot/PX4 high-level actions (Takeoff, Orbit, Offboard, Land)
-> │   │       ├── mission                             # Orchestrator of the actions in `autopilot_interface` 
-> │   │       ├── offboard_control                    # Low-level references for the Offboard action in `autopilot_interface` 
-> │   │       ├── state_sharing                       # Publisher of the `/state_sharing_drone_N` topic broadcasted by Zenoh
-> │   │       └── yolo_py                             # GStreamer video acquisition and publisher of YOLO bounding boxes
-> │   │
-> │   └── aircraft.yml.erb                            # Aircraft docker tmux entrypoint
-> │
-> ├── ground
-> │   ├── ground_ws
-> │   │   └── src
-> │   │       └── ground_system                       # Publisher of topic `/tracks` broadcasted by Zenoh
-> │   │
-> │   └── ground.yml.erb                              # Ground docker tmux entrypoint
-> │
-> ├── scripts
-> │   ├── docker
-> │   │   ├── Dockerfile.aircraft                     # Docker image for aircraft simulation and deployment
-> │   │   ├── Dockerfile.ground                       # Docker image for ground system simulation and deployment
-> │   │   └── Dockerfile.simulation                   # Docker image for SITL and HITL simulation
-> │   │
-> │   ├── deploy_build.sh                             # Build `Dockerfile.aircraft` for arm64/Orin
-> │   ├── deploy_run.sh                               # Start the aircraft docker on arm64/Orin or the ground docker on amd64 (deploy or HITL)
-> │   │
-> │   ├── gym_run.py                                  # Examples for the Gymnasium aas-gym package
-> │   │
-> │   ├── sim_build.sh                                # Build all dockerfiles for amd64/simulation
-> │   └── sim_run.sh                                  # Start the simulation (SITL or HITL)
-> │
-> └── simulation
->     ├── simulation_resources
->     │   ├── aircraft_models
->     │   │   ├── alti_transition_quad                # ArduPilot VTOL model
->     │   │   ├── iris_with_ardupilot                 # ArduPilot quad model
->     │   │   ├── sensor_camera                       # Camera model
->     │   │   ├── sensor_lidar                        # LiDAR model
->     │   │   ├── standard_vtol                       # PX4 VTOL model
->     │   │   └── x500                                # PX4 quad model
->     │   └── simulation_worlds
->     │       ├── apple_orchard.sdf
->     │       ├── impalpable_greyness.sdf
->     │       ├── shibuya_crossing.sdf
->     │       └── swiss_town.sdf
->     │
->     └── simulation.yml.erb                          # Simulation docker tmux entrypoint
-> ```
-> </details>
->
-> <details>
-> <summary><b>Development within Live Containers</b> <i>(click to expand)</i></summary>
-> 
-> Launching the `sim_run.sh` script with `DEV=true`, does **not** start the simulation and mounts folders `[aircraft|ground|simulation]_resources`, `[aircraft|ground]_ws/src` as volumes to more easily track, commit, push changes while building and testing them within the containers:
-> 
-> ```sh
-> cd aerial-autonomy-stack/scripts/
-> DEV=true ./sim_run.sh                                                                       # Starts one simulation-image, one ground-image, and one aircraft-image where the *_resources/ and *_ws/src/ folders are mounted from the host
-> ```
-> 
-> To build changes—**made on the host**—in the `Ground` or `QUAD` Xterm terminal:
-> 
-> ```sh
-> cd /aas/aircraft_ws/                                                                        # Or cd /aas/ground_ws/
-> colcon build --symlink-install
-> ```
-> 
-> To start the simulation, in the `QUAD` Xterm terminal:
-> 
-> ```sh
-> tmuxinator start -p /aas/aircraft.yml.erb
-> ```
-> 
-> In the `Ground` Xterm terminal:
-> ```sh
-> tmuxinator start -p /aas/ground.yml.erb
-> ```
-> 
-> In the `Simulation` Xterm terminal:
-> ```sh
-> tmuxinator start -p /aas/simulation.yml.erb
-> ```
-> 
-> To end the simulation, in each terminal detach Tmux with `Ctrl + b`, then `d`; kill all lingering processes with `tmux kill-server && pkill -f gz`
-> </details>
 
 ---
 
