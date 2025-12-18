@@ -32,6 +32,7 @@ https://github.com/user-attachments/assets/57e5bc91-8bee-4bae-8f81-a9aacef471e7
 ## Overview
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace'}}}%%
 flowchart LR
     classDef bridge fill:#ffebd6,stroke:#f5a623,stroke-width:2px;
     classDef algo fill:#e1f5fe,stroke:#0277bd,stroke-width:2px;
@@ -40,27 +41,21 @@ flowchart LR
     subgraph aas [" "]
         direction LR
 
-        repor(((aerial-autonomy-stack)))
-
-        subgraph air ["[N#nbsp;x]#nbsp;✈️#nbsp;aircraft#nbsp;container(s)#nbsp;(amd64/arm64)"]
-            direction TB
-            
+        subgraph air ["[N#nbsp;x]#nbsp;#nbsp;aircraft#nbsp;container(s)#nbsp;(amd64/arm64)"]
+            direction TB 
             zenoh_air{{zenoh-bridge}}:::bridge
-            ap_link{{"uxrce_dds <br/> or MAVROS"}}:::bridge
-            
+            ap_link{{"uxrce_dds <br/> || MAVROS"}}:::bridge
+            state_sharing[/state_sharing\]:::algo
             subgraph control [Control]
                 direction LR
                 offboard_control(offboard_control):::algo
                 autopilot_interface(autopilot_interface):::algo
                 mission(mission):::algo
             end
-
             subgraph perception [Perception]
                 yolo_py[/yolo_py/]:::algo
                 kiss_icp[/kiss_icp/]:::algo
             end
-            
-            state_sharing[/state_sharing\]:::algo
 
             mission --> autopilot_interface
             yolo_py --> offboard_control
@@ -71,10 +66,9 @@ flowchart LR
             state_sharing -- /state_sharing_drone_n --> zenoh_air
         end
 
-        subgraph gnd ["💻#nbsp;ground#nbsp;container#nbsp;(amd64)"]
+        subgraph gnd ["#nbsp;ground#nbsp;container#nbsp;(amd64)"]
             direction TB
-
-            ground_system(ground_system):::algo
+            ground_system[/ground_system\]:::algo
             qgc(QGroundControl):::resource
             zenoh_gnd{{zenoh-bridge}}:::bridge
 
@@ -83,35 +77,41 @@ flowchart LR
             qgc ~~~ zenoh_gnd   
         end
 
-        subgraph sim ["🎮#nbsp;simulation#nbsp;container#nbsp;(amd64)"]
-            sitl["[N x] PX4 or <br/> ArduPilot SITL"]:::resource
+        subgraph sim ["#nbsp;simulation#nbsp;container#nbsp;(amd64)"]
+            sitl["[N x] PX4 || <br/> ArduPilot SITL"]:::resource
             gz[Gazebo Sim]:::resource
+            subgraph models [Models]
+                drones(aircraft_models):::resource
+                worlds(simulation_worlds):::resource
+            end
             
-            sitl <--> |"gz_bridge or ardupilot_gazebo"| gz
+            sitl <--> |"gz_bridge || ardupilot_gazebo"| gz
+            drones --> |" "| gz
+            worlds --> |" "| gz
         end
 
+        repo(((aerial#nbsp;autonomy#nbsp;stack)))
     end
 
+    repo ~~~ gz
     gz --> |"gz_gst_bridge <br/> [SIM_NET]"| yolo_py
     gz --> |"/lidar_points <br/> [SIM_NET]"| kiss_icp
-    
     sitl <--> |"UDP <br/> [SIM_NET]"| ap_link
-
     sitl <--> |"MAVLink <br/> [SIM_NET]"| qgc 
     sitl --> |"MAVLink <br/> [SIM_NET]"| ground_system
-
     zenoh_gnd <-.-> |"TCP <br/> [AIR_NET]"| zenoh_air
 
-    style aas fill:#e1f0ff,stroke:#666,stroke-width:1px,stroke-dasharray: 5 5
+    style aas fill:#e1f0ff,stroke:#666,stroke-width:2px
+    style repo fill:#e1f0ff,stroke:#666,stroke-width:2px
     style air fill:#f9f9f9,stroke:#666,stroke-width:1px,stroke-dasharray: 5 5
     style gnd fill:#f9f9f9,stroke:#666,stroke-width:1px,stroke-dasharray: 5 5
     style sim fill:#f9f9f9,stroke:#666,stroke-width:1px,stroke-dasharray: 5 5
-
     style perception fill:#eeeeee,stroke:#666,stroke-width:1px,stroke-dasharray: 5 5
     style control fill:#eeeeee,stroke:#666,stroke-width:1px,stroke-dasharray: 5 5
+    style models fill:#eeeeee,stroke:#666,stroke-width:1px,stroke-dasharray: 5 5
 
-    linkStyle 16 stroke:blue,stroke-width:4px;
-    linkStyle 11,12,13,14,15 stroke:red,stroke-width:4px;
+    linkStyle 14,15,16,17,18 stroke:teal,stroke-width:3px;
+    linkStyle 19 stroke:blue,stroke-width:4px;
 ```
 
 <details>
