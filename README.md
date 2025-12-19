@@ -33,61 +33,53 @@ https://github.com/user-attachments/assets/57e5bc91-8bee-4bae-8f81-a9aacef471e7
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace'}}}%%
-flowchart LR
-    classDef bridge fill:#ffebd6,stroke:#f5a623,stroke-width:2px;
-    classDef algo fill:#e1f5fe,stroke:#0277bd,stroke-width:2px;
-    classDef resource fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
-
+flowchart TB
     subgraph aas [" "]
-        direction LR
-
-        subgraph air ["[N#nbsp;x]#nbsp;#nbsp;aircraft#nbsp;container(s)#nbsp;(amd64/arm64)"]
-            direction TB 
-            zenoh_air{{zenoh-bridge}}:::bridge
-            ap_link{{"uxrce_dds <br/> || MAVROS"}}:::bridge
-            state_sharing[/state_sharing\]:::algo
-            subgraph control [Control]
-                direction LR
-                offboard_control(offboard_control):::algo
-                autopilot_interface(autopilot_interface):::algo
-                mission(mission):::algo
-            end
-            subgraph perception [Perception]
-                yolo_py[/yolo_py/]:::algo
-                kiss_icp[/kiss_icp/]:::algo
-            end
-
-            mission --> autopilot_interface
-            yolo_py --> offboard_control
-            kiss_icp --> offboard_control
-            offboard_control -- /reference --> autopilot_interface
-            ap_link <--> autopilot_interface
-            ap_link --> state_sharing
-            state_sharing -- /state_sharing_drone_n --> zenoh_air
-        end
-
-        subgraph gnd ["#nbsp;ground#nbsp;container#nbsp;(amd64)"]
-            direction TB
-            ground_system[/ground_system\]:::algo
-            qgc(QGroundControl):::resource
-            zenoh_gnd{{zenoh-bridge}}:::bridge
-
-            ground_system -- /tracks --> zenoh_gnd
-            ground_system ~~~ qgc
-            qgc ~~~ zenoh_gnd   
-        end
-
         subgraph sim ["#nbsp;simulation#nbsp;container#nbsp;(amd64)"]
-            sitl["[N x] PX4 || <br/> ArduPilot SITL"]:::resource
-            gz[Gazebo Sim]:::resource
+            sitl("[N x] PX4 || <br/> ArduPilot SITL"):::resource
+            gz(Gazebo Sim):::resource
             subgraph models [Models]
                 drones(aircraft_models):::resource
                 worlds(simulation_worlds):::resource
             end
             
+            drones --> gz
+            worlds --> gz
             sitl <--> |"gz_bridge || ardupilot_gazebo"| gz
-            drones --> |" "| gz
-            worlds --> |" "| gz
+        end
+
+        subgraph gnd ["#nbsp;ground#nbsp;container#nbsp;(amd64)"]
+            ground_system[/ground_system\]:::algo
+            qgc(QGroundControl):::resource
+            zenoh_gnd{{zenoh-bridge}}:::bridge
+
+            ground_system ~~~ qgc
+            ground_system --> |"/tracks"| zenoh_gnd  
+        end
+
+        subgraph air ["[N#nbsp;x]#nbsp;aircraft#nbsp;container(s)#nbsp;(amd64/arm64)"]
+            subgraph perception [Perception]
+                yolo_py[/yolo_py/]:::algo
+                kiss_icp[/kiss_icp/]:::algo
+            end
+            subgraph control [Control]
+                offboard_control(offboard_control):::algo
+                autopilot_interface(autopilot_interface):::algo
+                mission(mission):::algo
+            end
+            ap_link{{"uxrce_dds <br/> || MAVROS"}}:::bridge
+            subgraph swarm [Swarm]
+                state_sharing[/state_sharing\]:::algo
+            end
+            zenoh_air{{zenoh-bridge}}:::bridge
+
+            kiss_icp -.-> |" "| ap_link
+            ap_link <--> autopilot_interface
+            ap_link --> state_sharing
+            yolo_py --> offboard_control
+            offboard_control --> |"/reference"| autopilot_interface
+            mission --> autopilot_interface
+            zenoh_air --> |"/state_sharing_drone_n"| state_sharing
         end
 
         repo(((aerial#nbsp;autonomy#nbsp;stack)))
@@ -101,17 +93,18 @@ flowchart LR
     sitl --> |"MAVLink <br/> [SIM_NET]"| ground_system
     zenoh_gnd <-.-> |"TCP <br/> [AIR_NET]"| zenoh_air
 
-    style aas fill:#e1f0ff,stroke:#666,stroke-width:2px
-    style repo fill:#e1f0ff,stroke:#666,stroke-width:2px
-    style air fill:#f9f9f9,stroke:#666,stroke-width:1px,stroke-dasharray: 5 5
-    style gnd fill:#f9f9f9,stroke:#666,stroke-width:1px,stroke-dasharray: 5 5
-    style sim fill:#f9f9f9,stroke:#666,stroke-width:1px,stroke-dasharray: 5 5
-    style perception fill:#eeeeee,stroke:#666,stroke-width:1px,stroke-dasharray: 5 5
-    style control fill:#eeeeee,stroke:#666,stroke-width:1px,stroke-dasharray: 5 5
-    style models fill:#eeeeee,stroke:#666,stroke-width:1px,stroke-dasharray: 5 5
+    classDef bridge fill:#ffebd6,stroke:#f5a623,stroke-width:2px;
+    classDef algo fill:#e1f5fe,stroke:#0277bd,stroke-width:2px;
+    classDef resource fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    classDef blueStyle  fill:#e1f0ff,stroke:#666,stroke-width:2px;
+    classDef whiteStyle fill:#f9f9f9,stroke:#666,stroke-width:1px,stroke-dasharray: 5 5;
+    classDef greyStyle  fill:#eeeeee,stroke:#666,stroke-width:1px,stroke-dasharray: 5 5;
 
-    linkStyle 14,15,16,17,18 stroke:teal,stroke-width:3px;
-    linkStyle 19 stroke:blue,stroke-width:4px;
+    class aas,repo blueStyle;
+    class air,gnd,sim whiteStyle;
+    class perception,control,models,swarm greyStyle;
+    linkStyle 13,14,15,16,17 stroke:teal,stroke-width:3px;
+    linkStyle 18 stroke:blue,stroke-width:4px;
 ```
 
 <details>
@@ -206,8 +199,6 @@ cd aerial-autonomy-stack/scripts/
   </a>
 </div>
 
----
-
 ## Simulation
 
 ![workspace](https://github.com/user-attachments/assets/ad909fcc-69de-44ac-84b3-c5bc7a1c896f)
@@ -265,7 +256,7 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 > To create a new mission, implement [`MissionNode.conops_callback()`](/aircraft/aircraft_ws/src/mission/mission/mission_node.py)
 > </details>
 > <details>
-> <summary><b>Development within Live Containers</b> <i>(click to expand)</i></summary>
+> <summary><b>Develop with Running Containers</b> <i>(click to expand)</i></summary>
 > 
 > Launching the `sim_run.sh` script with `DEV=true`, does **not** start the simulation and mounts folders `[aircraft|ground|simulation]_resources`, `[aircraft|ground]_ws/src` as volumes to more easily track, commit, push changes while building and testing them within the containers:
 > 
@@ -342,13 +333,11 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 
 ![worlds](https://github.com/user-attachments/assets/b9f7635a-0b1f-4698-ba6a-70ab1b412aef)
 
-Included `WORLD`s:
-- `apple_orchard`, a GIS world created using [BlenderGIS](https://github.com/domlysz/BlenderGIS)
-- `impalpable_greyness`, (default) an empty world with simple shapes
-- `shibuya_crossing`, a 3D world adapted from [cgtrader](https://www.cgtrader.com/)
-- `swiss_town`, a photogrammetry world courtesy of [Pix4D / pix4d.com](https://support.pix4d.com/hc/en-us/articles/360000235126)
-
----
+> `WORLD`s (in clock-wise order): 
+> `apple_orchard`, a GIS world created using [BlenderGIS](https://github.com/domlysz/BlenderGIS)
+> / `impalpable_greyness`, an empty world with simple shapes
+> / `shibuya_crossing`, a 3D world adapted from [cgtrader](https://www.cgtrader.com/)
+> / `swiss_town`, a photogrammetry world courtesy of [Pix4D / pix4d.com](https://support.pix4d.com/hc/en-us/articles/360000235126)
 
 ## Gymnasium Environment
 
@@ -389,8 +378,6 @@ Clean up with:
 docker stop $(docker ps -q) && docker container prune -f && docker network prune -f
 
 -->
-
----
 
 ## Jetson Deployment
 
