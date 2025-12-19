@@ -42,7 +42,7 @@ flowchart TB
                 drones(aircraft_models):::resource
                 worlds(simulation_worlds):::resource
             end
-            
+
             drones --> gz
             worlds --> gz
             sitl <--> |"gz_bridge || ardupilot_gazebo"| gz
@@ -73,12 +73,12 @@ flowchart TB
             end
             zenoh_air{{zenoh-bridge}}:::bridge
 
-            kiss_icp -.-> |" "| ap_link
+            kiss_icp -.-> |"/TBD"| ap_link
             ap_link <--> autopilot_interface
             ap_link --> state_sharing
-            yolo_py --> offboard_control
+            yolo_py --> |"/detections"| offboard_control
             offboard_control --> |"/reference"| autopilot_interface
-            mission --> autopilot_interface
+            mission --> |"ros2 action/srv"| autopilot_interface
             zenoh_air --> |"/state_sharing_drone_n"| state_sharing
         end
 
@@ -86,12 +86,12 @@ flowchart TB
     end
 
     repo ~~~ gz
-    gz --> |"gz_gst_bridge <br/> [SIM_NET]"| yolo_py
-    gz --> |"/lidar_points <br/> [SIM_NET]"| kiss_icp
-    sitl <--> |"UDP <br/> [SIM_NET]"| ap_link
-    sitl <--> |"MAVLink <br/> [SIM_NET]"| qgc 
-    sitl --> |"MAVLink <br/> [SIM_NET]"| ground_system
-    zenoh_gnd <-.-> |"TCP <br/> [AIR_NET]"| zenoh_air
+    gz --> |"gz_gst_bridge <br/> [SIM_SUBNET]"| yolo_py
+    gz --> |"/lidar_points <br/> [SIM_SUBNET]"| kiss_icp
+    sitl <--> |"UDP <br/> [SIM_SUBNET]"| ap_link
+    sitl <--> |"MAVLink <br/> [SIM_SUBNET]"| qgc 
+    sitl --> |"MAVLink <br/> [SIM_SUBNET]"| ground_system
+    zenoh_gnd <-.-> |"TCP <br/> [AIR_SUBNET]"| zenoh_air
 
     classDef bridge fill:#ffebd6,stroke:#f5a623,stroke-width:2px;
     classDef algo fill:#e1f5fe,stroke:#0277bd,stroke-width:2px;
@@ -334,10 +334,10 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 ![worlds](https://github.com/user-attachments/assets/b9f7635a-0b1f-4698-ba6a-70ab1b412aef)
 
 > `WORLD`s (in clock-wise order): 
-> `apple_orchard`, a GIS world created using [BlenderGIS](https://github.com/domlysz/BlenderGIS)
-> / `impalpable_greyness`, an empty world with simple shapes
-> / `shibuya_crossing`, a 3D world adapted from [cgtrader](https://www.cgtrader.com/)
-> / `swiss_town`, a photogrammetry world courtesy of [Pix4D / pix4d.com](https://support.pix4d.com/hc/en-us/articles/360000235126)
+> *(i)* `apple_orchard`, a GIS world created using [BlenderGIS](https://github.com/domlysz/BlenderGIS)
+> / *(ii)* `impalpable_greyness`, an empty world with simple shapes
+> / *(iii)* `shibuya_crossing`, a 3D world adapted from [cgtrader](https://www.cgtrader.com/)
+> / *(iv)* `swiss_town`, a photogrammetry world courtesy of [Pix4D / pix4d.com](https://support.pix4d.com/hc/en-us/articles/360000235126)
 
 ## Gymnasium Environment
 
