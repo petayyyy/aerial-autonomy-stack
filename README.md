@@ -108,7 +108,7 @@ flowchart TB
 ```
 
 <details>
-<summary>Repo Structure <i>(click to expand)</i></summary>
+<summary>Repository Structure <i>(click to expand)</i></summary>
 
 ```sh
 aerial-autonomy-stack
@@ -232,7 +232,7 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 
 > [!TIP]
 > <details>
-> <summary><b>ROS2 Drone CLI</b> <i>(click to expand)</i></summary>
+> <summary>Tip 1: use <b>ROS2 drone motion primitives</b> from CLI <i>(click to expand)</i></summary>
 >
 > ```sh
 > # Takeoff action (quads and VTOLs)
@@ -256,7 +256,26 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 > To create a new mission, implement [`MissionNode.conops_callback()`](/aircraft/aircraft_ws/src/mission/mission/mission_node.py)
 > </details>
 > <details>
-> <summary><b>Develop with Running Containers</b> <i>(click to expand)</i></summary>
+> <summary>Tip 2: use <b>Tmux shortcuts</b> to navigate windows and panes in Xterm <i>(click to expand)</i></summary>
+>
+> ```sh
+> Ctrl + b, then n, p                   # Move between Tmux windows 
+> Ctrl + b, then [arrow keys]           # Move between Tmux panes in a window
+> Ctrl + [, then [arrow keys]           # Enter copy mode (to select and/or scroll back)
+> q                                     # Exit copy mode
+> Ctrl + b, then "                      # Split a Tmux window horizontally
+> Ctrl + b, then %                      # Split a Tmux window vertically
+> Ctrl + b, then d                      # Detach Tmux
+> ```
+> ```sh
+> tmux list-sessions                    # List all sessions
+> tmux attach-session -t [session_name] # Reattach a session
+> tmux kill-session -t [session_name]   # Kill a session
+> tmux kill-server                      # Kill all sessions
+> ```
+> </details>
+> <details>
+> <summary>Tip 4: <b>develop within running containers</b> <i>(click to expand)</i></summary>
 > 
 > Launching the `sim_run.sh` script with `DEV=true`, does **not** start the simulation and mounts folders `[aircraft|ground|simulation]_resources`, `[aircraft|ground]_ws/src` as volumes to more easily track, commit, push changes while building and testing them within the containers:
 > 
@@ -291,26 +310,7 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 > To end the simulation, in each terminal detach Tmux with `Ctrl + b`, then `d`; kill all lingering processes with `tmux kill-server && pkill -f gz`
 > </details>
 > <details>
-> <summary><b>Tmux shortcuts</b> to navigate the windows/panes in Xterm <i>(click to expand)</i></summary>
->
-> ```sh
-> Ctrl + b, then n, p                   # Move between Tmux windows 
-> Ctrl + b, then [arrow keys]           # Move between Tmux panes in a window
-> Ctrl + [, then [arrow keys]           # Enter copy mode (to select and/or scroll back)
-> q                                     # Exit copy mode
-> Ctrl + b, then "                      # Split a Tmux window horizontally
-> Ctrl + b, then %                      # Split a Tmux window vertically
-> Ctrl + b, then d                      # Detach Tmux
-> ```
-> ```sh
-> tmux list-sessions                    # List all sessions
-> tmux attach-session -t [session_name] # Reattach a session
-> tmux kill-session -t [session_name]   # Kill a session
-> tmux kill-server                      # Kill all sessions
-> ```
-> </details>
-> <details>
-> <summary><b>Docker cleanup</b> commands <i>(click to expand)</i></summary>
+> <summary>Tip 3: periodically run <b>Docker cleanups</b> <i>(click to expand)</i></summary>
 >
 > ```sh
 > docker ps -a                          # List containers
@@ -409,7 +409,7 @@ DRONE_TYPE=quad AUTOPILOT=px4 DRONE_ID=1 CAMERA=true LIDAR=false ./deploy_run.sh
 ```
 
 <details>
-<summary><b>HITL Simulation</b> <i>(click to expand)</i></summary>
+<summary><b>Advanced Topic: HITL Simulation</b> <i>(click to expand)</i></summary>
 
 > **Note:** currently, HITL covers the Jetson compute and the inter-vehicle network, support for Pixhawk HITL is WIP. 
 > Use USB2.0 ASIX Ethernet adapters to add multiple network interfaces to the Jetson baseboards
