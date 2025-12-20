@@ -279,13 +279,13 @@ void ArdupilotInterface::set_speed_callback(const std::shared_ptr<autopilot_inte
     std::shared_lock<std::shared_mutex> lock(node_data_mutex_); // Use shared_lock for data reads
     if (((mav_type_ == 2) && aircraft_fsm_state_ != ArdupilotInterfaceState::MC_HOVER) || ((mav_type_ == 1) && aircraft_fsm_state_ != ArdupilotInterfaceState::FW_CRUISE)) {
         response->message = "Set speed rejected, ArdupilotInterface is not in hover/cruise state";
-        RCLCPP_ERROR(this->get_logger(), response->message.c_str());
+        RCLCPP_ERROR(this->get_logger(), "%s", response->message.c_str());
         response->success = false;
         return;
     }
     if (active_srv_or_act_flag_.exchange(true)) {
         response->message = "Another service/action is active";
-        RCLCPP_ERROR(this->get_logger(), response->message.c_str());
+        RCLCPP_ERROR(this->get_logger(), "%s", response->message.c_str());
         response->success = false;
         return;
     }
@@ -313,14 +313,14 @@ void ArdupilotInterface::set_reposition_callback(const std::shared_ptr<autopilot
         std::shared_lock<std::shared_mutex> lock(node_data_mutex_); // Use shared_lock for data reads
         if ((mav_type_ == 1) || ((mav_type_ == 2) && !(aircraft_fsm_state_ == ArdupilotInterfaceState::MC_HOVER || aircraft_fsm_state_ == ArdupilotInterfaceState::MC_ORBIT))) {
             response->message = "Set reposition rejected, ArdupilotInterface is not in a quad hover/orbit state (for VTOLs, use /orbit_action)";
-            RCLCPP_ERROR(this->get_logger(), response->message.c_str());
+            RCLCPP_ERROR(this->get_logger(), "%s", response->message.c_str());
             response->success = false;
             return;
         }
     }
     if (active_srv_or_act_flag_.exchange(true)) {
         response->message = "Another service/action is active";
-        RCLCPP_ERROR(this->get_logger(), response->message.c_str());
+        RCLCPP_ERROR(this->get_logger(), "%s", response->message.c_str());
         response->success = false;
         return;
     }

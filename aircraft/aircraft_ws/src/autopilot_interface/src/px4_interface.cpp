@@ -283,13 +283,13 @@ void PX4Interface::set_speed_callback(const std::shared_ptr<autopilot_interface_
     std::shared_lock<std::shared_mutex> lock(node_data_mutex_); // Use shared_lock for data reads
     if ((!is_vtol_ && aircraft_fsm_state_ != PX4InterfaceState::MC_HOVER) || (is_vtol_ && aircraft_fsm_state_ != PX4InterfaceState::FW_CRUISE)) {
         response->message = "Set speed rejected, PX4Interface is not in hover/cruise state";
-        RCLCPP_ERROR(this->get_logger(), response->message.c_str());
+        RCLCPP_ERROR(this->get_logger(), "%s", response->message.c_str());
         response->success = false;
         return;
     }
     if (active_srv_or_act_flag_.exchange(true)) {
         response->message = "Another service/action is active";
-        RCLCPP_ERROR(this->get_logger(), response->message.c_str());
+        RCLCPP_ERROR(this->get_logger(), "%s", response->message.c_str());
         response->success = false;
         return;
     }
@@ -308,13 +308,13 @@ void PX4Interface::set_reposition_callback(const std::shared_ptr<autopilot_inter
     std::shared_lock<std::shared_mutex> lock(node_data_mutex_); // Use shared_lock for data reads
     if ((is_vtol_) || (!is_vtol_ && !(aircraft_fsm_state_ == PX4InterfaceState::MC_HOVER || aircraft_fsm_state_ == PX4InterfaceState::MC_ORBIT))) {
         response->message = "Set reposition rejected, PX4Interface is not in a quad hover/orbit state (for VTOLs, use /orbit_action)";
-        RCLCPP_ERROR(this->get_logger(), response->message.c_str());
+        RCLCPP_ERROR(this->get_logger(), "%s", response->message.c_str());
         response->success = false;
         return;
     }
     if (active_srv_or_act_flag_.exchange(true)) {
         response->message = "Another service/action is active";
-        RCLCPP_ERROR(this->get_logger(), response->message.c_str());
+        RCLCPP_ERROR(this->get_logger(), "%s", response->message.c_str());
         response->success = false;
         return;
     }
