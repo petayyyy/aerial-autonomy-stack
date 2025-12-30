@@ -510,28 +510,28 @@ void ArdupilotInterface::land_handle_accepted(const std::shared_ptr<rclcpp_actio
                 call_service_and_update_fsm<WaypointPush, autopilot_interface_msgs::action::Land>(
                     wp_push_client_, mission_request, goal_handle,
                     "Request mission upload", ArdupilotInterfaceState::VTOL_LANDING_MISSION_UPLOADED);
-            } else if ((current_fsm_state == ArdupilotInterfaceState::VTOL_LANDING_MISSION_UPLOADED) && (current_time_us > (time_of_last_srv_req_us_ + 1.0 * 1000000))) {
+            } else if ((current_fsm_state == ArdupilotInterfaceState::VTOL_LANDING_MISSION_UPLOADED) && (current_time_us > (time_of_last_srv_req_us_ + ACTION_REQ_DELAY_SEC * 1000000))) {
                 auto set_current_request = std::make_shared<WaypointSetCurrent::Request>();
                 set_current_request->wp_seq = 1;
                 time_of_last_srv_req_us_ = current_time_us;
                 call_service_and_update_fsm<WaypointSetCurrent, autopilot_interface_msgs::action::Land>(
                     set_wp_client_, set_current_request, goal_handle,
                     "Request to set current waypoint ", ArdupilotInterfaceState::VTOL_LANDING_MISSION_WP_SET);
-            } else if ((current_fsm_state == ArdupilotInterfaceState::VTOL_LANDING_MISSION_WP_SET) && (current_time_us > (time_of_last_srv_req_us_ + 1.0 * 1000000))) {
+            } else if ((current_fsm_state == ArdupilotInterfaceState::VTOL_LANDING_MISSION_WP_SET) && (current_time_us > (time_of_last_srv_req_us_ + ACTION_REQ_DELAY_SEC * 1000000))) {
                 auto set_mode_request = std::make_shared<SetMode::Request>();
                 set_mode_request->custom_mode = "AUTO";
                 time_of_last_srv_req_us_ = current_time_us;
                 call_service_and_update_fsm<SetMode, autopilot_interface_msgs::action::Land>(
                     set_mode_client_, set_mode_request, goal_handle,
                     "Request mode", ArdupilotInterfaceState::VTOL_LANDING_AUTO_MODE);
-            } else if ((current_fsm_state == ArdupilotInterfaceState::VTOL_LANDING_AUTO_MODE) && (current_time_us > (time_of_last_srv_req_us_ + 1.0 * 1000000))) {
+            } else if ((current_fsm_state == ArdupilotInterfaceState::VTOL_LANDING_AUTO_MODE) && (current_time_us > (time_of_last_srv_req_us_ + ACTION_REQ_DELAY_SEC * 1000000))) {
                 auto command_request = std::make_shared<CommandLong::Request>();
                 command_request->command = 300; // MAV_CMD_MISSION_START
                 time_of_last_srv_req_us_ = current_time_us;
                 call_service_and_update_fsm<CommandLong, autopilot_interface_msgs::action::Land>(
                     command_long_client_, command_request, goal_handle,
                     "Request mission start", ArdupilotInterfaceState::VTOL_LANDING_READY_FOR_QRTL);
-            } else if ((current_fsm_state == ArdupilotInterfaceState::VTOL_LANDING_READY_FOR_QRTL) && (current_time_us > (time_of_last_srv_req_us_ + 1.0 * 1000000))) {
+            } else if ((current_fsm_state == ArdupilotInterfaceState::VTOL_LANDING_READY_FOR_QRTL) && (current_time_us > (time_of_last_srv_req_us_ + ACTION_REQ_DELAY_SEC * 1000000))) {
                 double distance_from_exit_in_meters;
                 geod.Inverse(lat_, lon_, exit_lat, exit_lon, distance_from_exit_in_meters);
                 if ((distance_from_exit_in_meters < VTOL_LAND_LOITER_EXIT_DIST_THRESH) && (std::abs(alt_ - (home_alt_ + landing_altitude)) < VTOL_LAND_LOITER_EXIT_ALT_THRESH)
@@ -791,28 +791,28 @@ void ArdupilotInterface::orbit_handle_accepted(const std::shared_ptr<rclcpp_acti
                 call_service_and_update_fsm<WaypointPush, autopilot_interface_msgs::action::Orbit>(
                     wp_push_client_, mission_request, goal_handle,
                     "Request mission upload", ArdupilotInterfaceState::MC_ORBIT_MISSION_UPLOADED);
-            } else if ((current_fsm_state == ArdupilotInterfaceState::MC_ORBIT_MISSION_UPLOADED) && (current_time_us > (time_of_last_srv_req_us_ + 1.0 * 1000000))) {
+            } else if ((current_fsm_state == ArdupilotInterfaceState::MC_ORBIT_MISSION_UPLOADED) && (current_time_us > (time_of_last_srv_req_us_ + ACTION_REQ_DELAY_SEC * 1000000))) {
                 auto set_current_request = std::make_shared<WaypointSetCurrent::Request>();
                 set_current_request->wp_seq = 1;
                 time_of_last_srv_req_us_ = current_time_us;
                 call_service_and_update_fsm<WaypointSetCurrent, autopilot_interface_msgs::action::Orbit>(
                     set_wp_client_, set_current_request, goal_handle,
                     "Requesting to set current waypoint", ArdupilotInterfaceState::MC_ORBIT_MISSION_WP_SET); 
-            } else if ((current_fsm_state == ArdupilotInterfaceState::MC_ORBIT_MISSION_WP_SET) && (current_time_us > (time_of_last_srv_req_us_ + 1.0 * 1000000))) {
+            } else if ((current_fsm_state == ArdupilotInterfaceState::MC_ORBIT_MISSION_WP_SET) && (current_time_us > (time_of_last_srv_req_us_ + ACTION_REQ_DELAY_SEC * 1000000))) {
                 auto set_mode_request = std::make_shared<SetMode::Request>();
                 set_mode_request->custom_mode = "AUTO";
                 time_of_last_srv_req_us_ = current_time_us;
                 call_service_and_update_fsm<SetMode, autopilot_interface_msgs::action::Orbit>(
                     set_mode_client_, set_mode_request, goal_handle,
                     "Request mode", ArdupilotInterfaceState::MC_ORBIT_AUTO_MODE);
-            } else if ((current_fsm_state == ArdupilotInterfaceState::MC_ORBIT_AUTO_MODE) && (current_time_us > (time_of_last_srv_req_us_ + 1.0 * 1000000))) {
+            } else if ((current_fsm_state == ArdupilotInterfaceState::MC_ORBIT_AUTO_MODE) && (current_time_us > (time_of_last_srv_req_us_ + ACTION_REQ_DELAY_SEC * 1000000))) {
                 auto command_request = std::make_shared<CommandLong::Request>();
                 command_request->command = 300; // MAV_CMD_MISSION_START
                 time_of_last_srv_req_us_ = current_time_us;
                 call_service_and_update_fsm<CommandLong, autopilot_interface_msgs::action::Orbit>(
                     command_long_client_, command_request, goal_handle,
                     "Request mission start", ArdupilotInterfaceState::MC_ORBIT_TRANSFER);
-            } else if ((current_fsm_state == ArdupilotInterfaceState::MC_ORBIT_TRANSFER) && (current_time_us > (time_of_last_srv_req_us_ + 1.0 * 1000000))) {
+            } else if ((current_fsm_state == ArdupilotInterfaceState::MC_ORBIT_TRANSFER) && (current_time_us > (time_of_last_srv_req_us_ + ACTION_REQ_DELAY_SEC * 1000000))) {
                 feedback->message = "MC orbit completed";
                 goal_handle->publish_feedback(feedback);
                 std::unique_lock<std::shared_mutex> lock(node_data_mutex_); // Use unique_lock for data writes
@@ -846,28 +846,28 @@ void ArdupilotInterface::orbit_handle_accepted(const std::shared_ptr<rclcpp_acti
                 call_service_and_update_fsm<WaypointPush, autopilot_interface_msgs::action::Orbit>(
                     wp_push_client_, mission_request, goal_handle,
                     "Request mission upload", ArdupilotInterfaceState::VTOL_ORBIT_MISSION_UPLOADED);
-            } else if ((current_fsm_state == ArdupilotInterfaceState::VTOL_ORBIT_MISSION_UPLOADED) && (current_time_us > (time_of_last_srv_req_us_ + 1.0 * 1000000))) { 
+            } else if ((current_fsm_state == ArdupilotInterfaceState::VTOL_ORBIT_MISSION_UPLOADED) && (current_time_us > (time_of_last_srv_req_us_ + ACTION_REQ_DELAY_SEC * 1000000))) { 
                 auto set_current_request = std::make_shared<WaypointSetCurrent::Request>();
                 set_current_request->wp_seq = 1;
                 time_of_last_srv_req_us_ = current_time_us;
                 call_service_and_update_fsm<WaypointSetCurrent, autopilot_interface_msgs::action::Orbit>(
                     set_wp_client_, set_current_request, goal_handle,
                     "Request to set current waypoint", ArdupilotInterfaceState::VTOL_ORBIT_MISSION_WP_SET);
-            } else if ((current_fsm_state == ArdupilotInterfaceState::VTOL_ORBIT_MISSION_WP_SET) && (current_time_us > (time_of_last_srv_req_us_ + 1.0 * 1000000))) {
+            } else if ((current_fsm_state == ArdupilotInterfaceState::VTOL_ORBIT_MISSION_WP_SET) && (current_time_us > (time_of_last_srv_req_us_ + ACTION_REQ_DELAY_SEC * 1000000))) {
                 auto set_mode_request = std::make_shared<SetMode::Request>();
                 set_mode_request->custom_mode = "AUTO";
                 time_of_last_srv_req_us_ = current_time_us;
                 call_service_and_update_fsm<SetMode, autopilot_interface_msgs::action::Orbit>(
                     set_mode_client_, set_mode_request, goal_handle,
                     "Request mode", ArdupilotInterfaceState::VTOL_ORBIT_AUTO_MODE);
-            } else if ((current_fsm_state == ArdupilotInterfaceState::VTOL_ORBIT_AUTO_MODE) && (current_time_us > (time_of_last_srv_req_us_ + 1.0 * 1000000))) {
+            } else if ((current_fsm_state == ArdupilotInterfaceState::VTOL_ORBIT_AUTO_MODE) && (current_time_us > (time_of_last_srv_req_us_ + ACTION_REQ_DELAY_SEC * 1000000))) {
                 auto command_request = std::make_shared<CommandLong::Request>();
                 command_request->command = 300; // MAV_CMD_MISSION_START
                 time_of_last_srv_req_us_ = current_time_us;
                 call_service_and_update_fsm<CommandLong, autopilot_interface_msgs::action::Orbit>(
                     command_long_client_, command_request, goal_handle,
                     "Request mission start", ArdupilotInterfaceState::VTOL_ORBIT_MISSION_COMPLETED);
-            } else if ((current_fsm_state == ArdupilotInterfaceState::VTOL_ORBIT_MISSION_COMPLETED) && (current_time_us > (time_of_last_srv_req_us_ + 1.0 * 1000000))) {
+            } else if ((current_fsm_state == ArdupilotInterfaceState::VTOL_ORBIT_MISSION_COMPLETED) && (current_time_us > (time_of_last_srv_req_us_ + ACTION_REQ_DELAY_SEC * 1000000))) {
                 feedback->message = "VTOL orbit action completed";
                 goal_handle->publish_feedback(feedback);
                 std::unique_lock<std::shared_mutex> lock(node_data_mutex_); // Use unique_lock for data writes
@@ -1043,28 +1043,28 @@ void ArdupilotInterface::takeoff_handle_accepted(const std::shared_ptr<rclcpp_ac
                 call_service_and_update_fsm<WaypointPush, autopilot_interface_msgs::action::Takeoff>(
                     wp_push_client_, mission_request, goal_handle,
                     "Request mission upload", ArdupilotInterfaceState::VTOL_TAKEOFF_MISSION_UPLOADED);
-            } else if ((current_fsm_state == ArdupilotInterfaceState::VTOL_TAKEOFF_MISSION_UPLOADED) && (current_time_us > (time_of_last_srv_req_us_ + 1.0 * 1000000))) {
+            } else if ((current_fsm_state == ArdupilotInterfaceState::VTOL_TAKEOFF_MISSION_UPLOADED) && (current_time_us > (time_of_last_srv_req_us_ + ACTION_REQ_DELAY_SEC * 1000000))) {
                 auto set_current_request = std::make_shared<WaypointSetCurrent::Request>();
                 set_current_request->wp_seq = 1;
                 time_of_last_srv_req_us_ = current_time_us;
                 call_service_and_update_fsm<WaypointSetCurrent, autopilot_interface_msgs::action::Takeoff>(
                     set_wp_client_, set_current_request, goal_handle,
                     "Request to set current waypoint", ArdupilotInterfaceState::VTOL_TAKEOFF_MISSION_WP_SET);
-            } else if ((current_fsm_state == ArdupilotInterfaceState::VTOL_TAKEOFF_MISSION_WP_SET) && (current_time_us > (time_of_last_srv_req_us_ + 1.0 * 1000000))) {
+            } else if ((current_fsm_state == ArdupilotInterfaceState::VTOL_TAKEOFF_MISSION_WP_SET) && (current_time_us > (time_of_last_srv_req_us_ + ACTION_REQ_DELAY_SEC * 1000000))) {
                 auto set_mode_request = std::make_shared<SetMode::Request>();
                 set_mode_request->custom_mode = "AUTO";
                 time_of_last_srv_req_us_ = current_time_us;
                 call_service_and_update_fsm<SetMode, autopilot_interface_msgs::action::Takeoff>(
                     set_mode_client_, set_mode_request, goal_handle,
                     "Request mode", ArdupilotInterfaceState::VTOL_TAKEOFF_AUTO_MODE);
-            } else if ((current_fsm_state == ArdupilotInterfaceState::VTOL_TAKEOFF_AUTO_MODE) && (current_time_us > (time_of_last_srv_req_us_ + 1.0 * 1000000))) {
+            } else if ((current_fsm_state == ArdupilotInterfaceState::VTOL_TAKEOFF_AUTO_MODE) && (current_time_us > (time_of_last_srv_req_us_ + ACTION_REQ_DELAY_SEC * 1000000))) {
                 auto command_request = std::make_shared<CommandLong::Request>();
                 command_request->command = 300; // MAV_CMD_MISSION_START
                 time_of_last_srv_req_us_ = current_time_us;
                 call_service_and_update_fsm<CommandLong, autopilot_interface_msgs::action::Takeoff>(
                     command_long_client_, command_request, goal_handle,
                     "Request mission start", ArdupilotInterfaceState::FW_CRUISE);
-            } else if ((current_fsm_state == ArdupilotInterfaceState::FW_CRUISE) && (current_time_us > (time_of_last_srv_req_us_ + 1.0 * 1000000))) {
+            } else if ((current_fsm_state == ArdupilotInterfaceState::FW_CRUISE) && (current_time_us > (time_of_last_srv_req_us_ + ACTION_REQ_DELAY_SEC * 1000000))) {
                 feedback->message = "VTOL takeoff completed";
                 goal_handle->publish_feedback(feedback);
                 taking_off = false;
