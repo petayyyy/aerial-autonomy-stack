@@ -44,7 +44,7 @@ public:
         // 1.a ZMQ TCP Setup (see self.ZMQ_TRANSPORT in aas_env.py)
         socket_.bind("tcp://*:5555"); // '*' binds to all interfaces (equivalent to 0.0.0.0)
         RCLCPP_INFO(this->get_logger(), "ZMQ REP socket bound to port 5555");
-        // // 1.b ZMQ ICP Setup (see self.ZMQ_TRANSPORT in aas_env.py)
+        // // 1.b ZMQ IPC Setup (see self.ZMQ_TRANSPORT in aas_env.py)
         // const char* env_instance = std::getenv("INSTANCE");
         // if (env_instance == nullptr) {
         //     RCLCPP_ERROR(this->get_logger(), "Environment variable 'INSTANCE' was not set.");
