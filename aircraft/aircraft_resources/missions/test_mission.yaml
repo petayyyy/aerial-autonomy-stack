@@ -6,6 +6,10 @@ steps:
       vtol_loiter_nord: 100.0
       vtol_loiter_east: 100.0
       vtol_loiter_alt: 120.0
+
+  - action: wait
+    params:
+      duration: 5.0
       
   - action: orbit
     params:
@@ -16,27 +20,42 @@ steps:
       
   - action: wait
     params:
-      duration: 45.0 # Orbit for 45 seconds
+      duration: 30.0
+
+  - action: reposition
+    params:
+     east: 50.0
+     north: 0.0
+     altitude: 60.0
+
+  - action: wait
+    params:
+      duration: 30.0
+
+  - action: speed
+    params:
+     speed: 16.0
+
+  - action: wait
+    params:
+      duration: 5.0
+
+  - action: reposition
+    params:
+     east: 200.0
+     north: -200.0
+     altitude: 80.0
+
+  - action: wait
+    params:
+      duration: 30.0
+
+  - action: offboard
+    params:
+     # offboard_setpoint_type: -1 # Use default based on autopilot
+     max_duration_sec: 10.0
       
   - action: land
     params:
       landing_altitude: 60.0
       vtol_transition_heading: 60.0
-
-# Other actions/services examples
-
-#  - action: offboard
-#    params:
-#      offboard_setpoint_type: 0
-#      max_duration_sec: 10.0
-
-#  - action: reposition
-#    params:
-#      east: 150.0
-#      north: -75.0
-#      altitude: 80.0
-
-#  - action: speed
-#    params:
-#      speed: 15.0
-   

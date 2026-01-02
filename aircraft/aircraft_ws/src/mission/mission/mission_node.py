@@ -382,12 +382,21 @@ class MissionNode(Node):
             self.send_goal(self._orbit_client, goal)
             
         elif action_type == 'offboard':
+            if (os.getenv('AUTOPILOT', '') == 'ardupilot') and (os.getenv('DRONE_TYPE', '') != 'quad'):
+                self.get_logger().warn("Offboard action is not supported by Ardupilot VTOL. Skip.")
+                self.mission_step += 1
+                return
+            default_setpoint_type = 2 if os.getenv('AUTOPILOT', '') == 'px4' else 3 # 2: PX4 trajectory reference, 3: ArduPilot velocity
             goal = Offboard.Goal()
-            goal.offboard_setpoint_type = int(params.get('offboard_setpoint_type', 0))
+            goal.offboard_setpoint_type = int(params.get('offboard_setpoint_type', default_setpoint_type))
             goal.max_duration_sec = float(params.get('max_duration_sec', 10.0))
             self.send_goal(self._offboard_client, goal)
 
         elif action_type == 'reposition':
+            if os.getenv('DRONE_TYPE', '') != 'quad':
+                self.get_logger().warn("Reposition action is only supported for 'quad' drone type. Skip.")
+                self.mission_step += 1
+                return
             req = SetReposition.Request()
             req.east = float(params.get('east', 0.0))
             req.north = float(params.get('north', 0.0))
@@ -405,7 +414,7 @@ class MissionNode(Node):
 
 def main(args=None):
     parser = argparse.ArgumentParser(description="Mission Node.")
-    parser.add_argument('--conops', type=str, default='/aas/aircraft_resources/missions/test_mission.yaml', help="Path to YAML mission file")
+    parser.add_argument('--conops', type=str, default='/aas/aircraft_resources/missions/test_mission.yaml', help="Path to the mission YAML file")
 
     cli_args, ros_args = parser.parse_known_args()
 
