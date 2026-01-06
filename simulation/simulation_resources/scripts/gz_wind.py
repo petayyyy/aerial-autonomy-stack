@@ -24,10 +24,10 @@ def main():
     pub = gz_node.advertise(f"/world/{world_name}/wind/", Wind)
     timeout = 0
     while not pub.has_connections():
-        if timeout > 100:  # Give up after 10s
+        if timeout > 5:  # Give up after 5s
             print("No subscribers found! Is Gazebo running?")
             return
-        time.sleep(0.1)
+        time.sleep(1.0)
         timeout += 1
 
     wind_msg = Wind()
