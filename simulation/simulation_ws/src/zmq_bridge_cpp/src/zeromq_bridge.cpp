@@ -193,9 +193,9 @@ private:
                         step_gazebo();
                         // D. Wait for Result
                         std::unique_lock<std::mutex> lock(clock_mutex_);
-                        received = clock_cv_.wait_for(lock, 2000ms, [this, target_time]{
+                        received = clock_cv_.wait_for(lock, 30000ms, [this, target_time]{
                             return current_sim_time_ >= target_time;
-                        }); // Wait up to 2 seconds for clock_ready_ to become true
+                        }); // Wait up to 30 seconds for clock_ready_ to become true
                     }
 
                     // 3. Send Reply

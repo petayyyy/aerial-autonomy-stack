@@ -161,7 +161,7 @@ class AASEnv(gym.Env):
             name=self.SIM_CONT_NAME,
             tty=True, # Replaces -it
             detach=True,
-            auto_remove=True,
+            auto_remove=False,
             privileged=True, # Replaces --privileged
             volumes=volume_binds,
             devices=device_binds,
@@ -215,7 +215,7 @@ class AASEnv(gym.Env):
                 name=air_cont_name,
                 tty=True, # Replaces -it
                 detach=True,
-                auto_remove=True,
+                auto_remove=False,
                 privileged=True, # Replaces --privileged
                 volumes=volume_binds,
                 devices=device_binds,
@@ -290,7 +290,7 @@ class AASEnv(gym.Env):
             raise e
         # Establish ZeroMQ connection
         self.socket = self.zmq_context.socket(zmq.REQ)
-        self.socket.setsockopt(zmq.RCVTIMEO, 10 * 1000) # 1000 ms = 1 seconds
+        self.socket.setsockopt(zmq.RCVTIMEO, 60 * 1000) # 1000 ms = 1 seconds, only a placeholder, will be changed during reset
         if self.ZMQ_TRANSPORT == "tcp":
             self.socket.connect(f"tcp://{self.ZMQ_IP}:{self.ZMQ_PORT}")
             print(f"ZeroMQ socket connected to {self.ZMQ_IP}:{self.ZMQ_PORT}")
@@ -304,12 +304,12 @@ class AASEnv(gym.Env):
         # ZeroMQ REQ/REP to the ROS2 sim ##########################################################
         ###########################################################################################
         try:
-            self.socket.setsockopt(zmq.RCVTIMEO, 120 * 1000) # Temporarily increase timeout to 120s to reset the simulation
+            self.socket.setsockopt(zmq.RCVTIMEO, 300 * 1000) # Temporarily increase timeout to 300s to reset the simulation
             reset = 9999.0 # A special action to reset the environment
             action_payload = struct.pack('d', reset) # Serialize the action 
             self.socket.send(action_payload) # Send the REQ
             reply_bytes = self.socket.recv() # Wait for the REP (synchronous block) this call will block until a reply is received or it times out
-            self.socket.setsockopt(zmq.RCVTIMEO, 10 * 1000) # Restore standard timeout (10s) for stepping
+            self.socket.setsockopt(zmq.RCVTIMEO, 60 * 1000) # Restore standard timeout (60s) for stepping
             unpacked = struct.unpack('iI', reply_bytes) # Deserialize: i = int32 (sec), I = uint32 (nanosec)
             self.sim_sec, self.sim_nanosec = unpacked
             self.start_sim_sec = float(self.sim_sec) + (float(self.sim_nanosec) * 1e-9)
@@ -381,15 +381,16 @@ class AASEnv(gym.Env):
         if self.render_mode == "ansi":
             print() # Add a newline after the final render
         
-        # Docker clean-up (auto_remove=True in the creation step handles removal after stop)
         try:
             self.simulation_container.stop()
+            self.simulation_container.remove(force=True)
             print(f"Simulation container '{self.simulation_container.name}' stopped.")
         except Exception:
             pass
         for container in self.aircraft_containers:
             try:
                 container.stop()
+                container.remove(force=True)
                 print(f"Aircraft container '{container.name}' stopped.")
             except Exception:
                 pass
