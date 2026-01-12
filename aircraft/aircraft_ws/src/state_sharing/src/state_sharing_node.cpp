@@ -40,25 +40,25 @@ public:
 
         if (autopilot == "px4")
         {
-            subscription_px4_ = this->create_subscription<px4_msgs::msg::VehicleGlobalPosition>(
+            subscription_global_px4_ = this->create_subscription<px4_msgs::msg::VehicleGlobalPosition>(
                 "/Drone" + std::to_string(drone_id_) + "/fmu/out/vehicle_global_position",
-                qos_profile_sub, std::bind(&StateSharingNode::px4_callback, this, std::placeholders::_1), subscriber_options);
+                qos_profile_sub, std::bind(&StateSharingNode::px4_global_pos_callback, this, std::placeholders::_1), subscriber_options);
 
-            px4_local_pos_sub_ = this->create_subscription<px4_msgs::msg::VehicleLocalPosition>(
+            subscription_local_px4_ = this->create_subscription<px4_msgs::msg::VehicleLocalPosition>(
                 "/Drone" + std::to_string(drone_id_) + "/fmu/out/vehicle_local_position",
                 qos_profile_sub, std::bind(&StateSharingNode::px4_local_pos_callback, this, std::placeholders::_1), subscriber_options);
         }
         else
         {
-            subscription_apm_ = this->create_subscription<sensor_msgs::msg::NavSatFix>(
+            subscription_navsat_apm_ = this->create_subscription<sensor_msgs::msg::NavSatFix>(
                 "/mavros/global_position/global", 
-                qos_profile_sub, std::bind(&StateSharingNode::ardupilot_callback, this, std::placeholders::_1), subscriber_options);
+                qos_profile_sub, std::bind(&StateSharingNode::ardupilot_navsat_callback, this, std::placeholders::_1), subscriber_options);
 
-            ap_vel_sub_ = this->create_subscription<geometry_msgs::msg::TwistStamped>(
+            subscription_vel_apm_ = this->create_subscription<geometry_msgs::msg::TwistStamped>(
                 "/mavros/local_position/velocity_local",
                 qos_profile_sub, std::bind(&StateSharingNode::ardupilot_vel_callback, this, std::placeholders::_1), subscriber_options);
 
-            ap_hud_sub_ = this->create_subscription<mavros_msgs::msg::VfrHud>(
+            subscription_hud_apm_ = this->create_subscription<mavros_msgs::msg::VfrHud>(
                 "/mavros/vfr_hud",
                 qos_profile_sub, std::bind(&StateSharingNode::ardupilot_hud_callback, this, std::placeholders::_1), subscriber_options);
             
@@ -70,57 +70,57 @@ private:
     int drone_id_;
     std::string autopilot;
 
-    state_sharing::msg::SharedState latest_position_;
+    state_sharing::msg::SharedState latest_state_;
     std::mutex data_mutex_;
 
     rclcpp::CallbackGroup::SharedPtr callback_group_timer_;
     rclcpp::CallbackGroup::SharedPtr callback_group_subscriber_;
 
     rclcpp::Publisher<state_sharing::msg::SharedState>::SharedPtr publisher_;
-    rclcpp::Subscription<px4_msgs::msg::VehicleGlobalPosition>::SharedPtr subscription_px4_;
-    rclcpp::Subscription<px4_msgs::msg::VehicleLocalPosition>::SharedPtr px4_local_pos_sub_;
-    rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr subscription_apm_;
-    rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr ap_vel_sub_;
-    rclcpp::Subscription<mavros_msgs::msg::VfrHud>::SharedPtr ap_hud_sub_;
+    rclcpp::Subscription<px4_msgs::msg::VehicleGlobalPosition>::SharedPtr subscription_global_px4_;
+    rclcpp::Subscription<px4_msgs::msg::VehicleLocalPosition>::SharedPtr subscription_local_px4_;
+    rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr subscription_navsat_apm_;
+    rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr subscription_vel_apm_;
+    rclcpp::Subscription<mavros_msgs::msg::VfrHud>::SharedPtr subscription_hud_apm_;
     rclcpp::TimerBase::SharedPtr timer_;
 
-    void px4_callback(const px4_msgs::msg::VehicleGlobalPosition::SharedPtr msg)
+    void px4_global_pos_callback(const px4_msgs::msg::VehicleGlobalPosition::SharedPtr msg)
     {
         std::lock_guard<std::mutex> lock(data_mutex_);
-        latest_position_.latitude_deg = msg->lat;
-        latest_position_.longitude_deg = msg->lon;
-        latest_position_.altitude_m = msg->alt; // This is AMSL altitude
+        latest_state_.latitude_deg = msg->lat;
+        latest_state_.longitude_deg = msg->lon;
+        latest_state_.altitude_m = msg->alt; // This is AMSL altitude
     }
 
     void px4_local_pos_callback(const px4_msgs::msg::VehicleLocalPosition::SharedPtr msg)
     {
         std::lock_guard<std::mutex> lock(data_mutex_);
-        latest_position_.vx = msg->vx;
-        latest_position_.vy = msg->vy;
-        latest_position_.vz = msg->vz;
-        latest_position_.heading_deg = msg->heading * (180.0 / M_PI); // Convert radians to degrees
+        latest_state_.vx = msg->vx;
+        latest_state_.vy = msg->vy;
+        latest_state_.vz = msg->vz;
+        latest_state_.heading_deg = msg->heading * (180.0 / M_PI); // Convert radians to degrees
     }
 
-    void ardupilot_callback(const sensor_msgs::msg::NavSatFix::SharedPtr msg)
+    void ardupilot_navsat_callback(const sensor_msgs::msg::NavSatFix::SharedPtr msg)
     {
         std::lock_guard<std::mutex> lock(data_mutex_);
-        latest_position_.latitude_deg = msg->latitude;
-        latest_position_.longitude_deg = msg->longitude;
-        latest_position_.altitude_m = msg->altitude; // This is ellipsoid altitude
+        latest_state_.latitude_deg = msg->latitude;
+        latest_state_.longitude_deg = msg->longitude;
+        latest_state_.altitude_m = msg->altitude; // This is ellipsoid altitude
     }
 
     void ardupilot_vel_callback(const geometry_msgs::msg::TwistStamped::SharedPtr msg)
     {
         std::lock_guard<std::mutex> lock(data_mutex_);
-        latest_position_.vx = msg->twist.linear.x;
-        latest_position_.vy = msg->twist.linear.y;
-        latest_position_.vz = msg->twist.linear.z;
+        latest_state_.vx = msg->twist.linear.x;
+        latest_state_.vy = msg->twist.linear.y;
+        latest_state_.vz = msg->twist.linear.z;
     }
 
     void ardupilot_hud_callback(const mavros_msgs::msg::VfrHud::SharedPtr msg)
     {
         std::lock_guard<std::mutex> lock(data_mutex_);
-        latest_position_.heading_deg = msg->heading; // In degrees
+        latest_state_.heading_deg = msg->heading; // In degrees
     }
 
     void publish_timer_callback()
@@ -130,13 +130,13 @@ private:
         message.drone_id = drone_id_;
         {
             std::lock_guard<std::mutex> lock(data_mutex_);
-            message.latitude_deg = latest_position_.latitude_deg;
-            message.longitude_deg = latest_position_.longitude_deg;
-            message.altitude_m = latest_position_.altitude_m;
-            message.vx = latest_position_.vx;
-            message.vy = latest_position_.vy;
-            message.vz = latest_position_.vz;
-            message.heading_deg = latest_position_.heading_deg;
+            message.latitude_deg = latest_state_.latitude_deg;
+            message.longitude_deg = latest_state_.longitude_deg;
+            message.altitude_m = latest_state_.altitude_m;
+            message.vx = latest_state_.vx;
+            message.vy = latest_state_.vy;
+            message.vz = latest_state_.vz;
+            message.heading_deg = latest_state_.heading_deg;
         }
         publisher_->publish(message);
     }
