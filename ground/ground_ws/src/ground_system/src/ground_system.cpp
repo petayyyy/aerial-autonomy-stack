@@ -13,6 +13,7 @@ GroundSystem::GroundSystem() : Node("ground_system"), keep_running_(true)
     ip_ = this->get_parameter("ip").as_string();
     base_port_ = this->get_parameter("base_port").as_int();
     publish_rate_ = this->get_parameter("rate").as_double();
+    use_sim_time_ = this->get_parameter("use_sim_time").as_bool();
 
     // Random Seed
     rng_.seed(std::random_device()());
@@ -24,12 +25,18 @@ GroundSystem::GroundSystem() : Node("ground_system"), keep_running_(true)
     auto timer_period = std::chrono::duration<double>(1.0 / publish_rate_);
     timer_ = this->create_wall_timer(timer_period, std::bind(&GroundSystem::publish_swarm_obs, this));
 
-    // Start Listener Threads
-    for (int i = 0; i < num_drones_; ++i) {
-        int drone_id = i + 1;
-        int port = base_port_ + i;
-        listener_threads_.emplace_back(&GroundSystem::mavlink_listener, this, drone_id, port);
-        RCLCPP_INFO(this->get_logger(), "Listening for drone %d on port %d", drone_id, port);
+    if (use_sim_time_) {
+        // SIMULATION: one thread/port per drone
+        for (int i = 0; i < num_drones_; ++i) {
+            int drone_id = i + 1;
+            int port = base_port_ + i;
+            listener_threads_.emplace_back(&GroundSystem::mavlink_listener, this, drone_id, port);
+            RCLCPP_INFO(this->get_logger(), "Simulation: listening for drone %d on port %d", drone_id, port);
+        }
+    } else {
+        // HARDWARE: single listener, use base_port_ and pass drone_id = -1 to signal "auto-detect ID from message"
+        listener_threads_.emplace_back(&GroundSystem::mavlink_listener, this, -1, base_port_);
+        RCLCPP_INFO(this->get_logger(), "Hardware: listening on single port %d", base_port_);
     }
 }
 
@@ -82,6 +89,15 @@ void GroundSystem::mavlink_listener(int drone_id, int port)
             // Parse bytes
             for (ssize_t i = 0; i < len; ++i) {
                 if (mavlink_parse_char(MAVLINK_COMM_0, buffer[i], &msg, &status)) {
+
+                    // If we are in single-port/single-thread mode (drone_id == -1), detect ID from the message
+                    int current_id = drone_id;
+                    if (current_id == -1) {
+                        current_id = msg.sysid;
+                        if (current_id < 1 || current_id > num_drones_) {
+                            continue; // Ignore out-of-bounds IDs
+                        }
+                    }
                     
                     if (msg.msgid == MAVLINK_MSG_ID_GLOBAL_POSITION_INT) { // Handle GLOBAL_POSITION_INT message
                         mavlink_global_position_int_t pos;

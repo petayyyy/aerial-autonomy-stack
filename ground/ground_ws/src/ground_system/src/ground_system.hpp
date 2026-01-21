@@ -42,6 +42,7 @@ private:
     std::string ip_;
     int base_port_;
     double publish_rate_;
+    bool use_sim_time_;
 
     // Threading & Data
     std::mutex data_mutex_;
