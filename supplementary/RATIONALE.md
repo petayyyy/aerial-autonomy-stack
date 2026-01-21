@@ -14,6 +14,10 @@ This is the challenge—and good sport—of **vertical/full-stack integration** 
 - the **many frameworks** that go into drone autonomy (a physics engine to simulate drone dynamics, a rendering engine to generate realistic imagery, a GPU-accelerated machine learning runtime for perception, one or more inter-process and inter-thread communication middleware, the interface to the microcontroller and autopilot software performing state-estimation and low-level control, the SDKs of the deployed embedded systems, etc.)
 - emulated **inter-robot communication** (in aerial systems, this is heavily affected by the actual flight plans and available RF hardware)
 
+## Presentations
+
+- [Aerial Robotics Meeting - January 22nd 2026 [slides]](https://docs.google.com/presentation/d/1Sz0d7WPWNwgCM3Q49Nnq1mvkSwPyK_CCQ7viHxO_Ucs)
+
 ## Related Work
 
 A summary of existing multi-drone flight stacks can be found in [Table II of this paper](https://arxiv.org/pdf/2303.18237). Notable ones are:

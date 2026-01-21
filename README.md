@@ -6,6 +6,23 @@
 2. **Simulate** faster-than-real-time perception and control—with YOLOv8 and 3D LiDAR 
 3. **Deploy** in real drones—with JetPack and NVIDIA Orin
 
+For the motivation behind AAS, read [`RATIONALE.md`](/supplementary/RATIONALE.md)
+<!--
+If you wish, please cite this work as:
+
+```bibtex
+@misc{panerati2026aas,
+      title={TBD}, 
+      author={TBD},
+      year={2026},
+      eprint={2601.TBD},
+      archivePrefix={arXiv},
+      primaryClass={cs.RO},
+      url={https://arxiv.org/abs/2601.TBD}, 
+}
+```
+-->
+
 <details>
 <summary><b>Feature list</b> <i>(click to expand)</i></summary>
 
