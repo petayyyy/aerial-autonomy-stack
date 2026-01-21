@@ -15,7 +15,29 @@ windows:
       layout: even-horizontal
       panes:
         - clear && echo "So nice to have you with us, this is the ground container."
-        - ros2 run ground_system ground_system --ros-args -p num_drones:=<%= num_quads + num_vtols %> -p base_port:=14540 -p rate:=1.0 <%= simulated_time ? ' -p use_sim_time:=True' : '' %>
+        - ros2 run ground_system ground_system --ros-args -p num_drones:=<%= num_quads + num_vtols %> -p base_port:=18540 -p rate:=1.0 <%= simulated_time ? ' -p use_sim_time:=True' : '' %>
+
+  - mavproxy:
+      layout: tiled
+      panes:
+        <% if simulated_time %>
+          <% (1..(num_quads + num_vtols)).each do |drone_id| %>
+          <% 
+            sitl_instance = drone_id - 1
+          %>
+          - >
+            mavproxy.py --master=udp:0.0.0.0:<%= 14540 + sitl_instance %>
+            --out=udp:127.0.0.1:<%= 14550 + sitl_instance %>
+            --out=udp:127.0.0.1:<%= 18540 + sitl_instance %>
+            --daemon --nowait --non-interactive
+          <% end %>
+        <% else %>
+          ->
+            mavproxy.py --master=/dev/ttyUSB0,57600
+            --out=udp:127.0.0.1:14550
+            --out=udp:127.0.0.1:18540
+            --daemon --nowait --non-interactive
+        <% end %>
 
   - zenoh_and_qgc:
       layout: even-horizontal

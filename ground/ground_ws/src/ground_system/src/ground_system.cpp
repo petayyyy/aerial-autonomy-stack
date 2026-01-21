@@ -5,7 +5,7 @@ GroundSystem::GroundSystem() : Node("ground_system"), keep_running_(true)
     // Declare Parameters
     this->declare_parameter("num_drones", 1);
     this->declare_parameter("ip", "0.0.0.0");
-    this->declare_parameter("base_port", 14540);
+    this->declare_parameter("base_port", 18540);
     this->declare_parameter("rate", 10.0);
 
     // Get Parameters
