@@ -56,8 +56,8 @@ flowchart TB
             sitl("[N x] PX4 || <br/> ArduPilot SITL"):::resource
             gz(Gazebo Sim):::resource
             subgraph models [Models]
-                drones(aircraft_models):::resource
-                worlds(simulation_worlds):::resource
+                drones(aircraft_models/):::resource
+                worlds(simulation_worlds/):::resource
             end
 
             drones --> gz
@@ -66,15 +66,17 @@ flowchart TB
         end
 
         subgraph gnd ["#nbsp;ground#nbsp;container#nbsp;(amd64)"]
+            mavproxy{{mavproxy}}:::bridge
             ground_system[/ground_system\]:::algo
             qgc(QGroundControl):::resource
             zenoh_gnd{{zenoh-bridge}}:::bridge
 
-            ground_system ~~~ qgc
-            ground_system --> |"/tracks"| zenoh_gnd  
+            ground_system --> |"/tracks"| zenoh_gnd
+            mavproxy <--> qgc
+            mavproxy --> ground_system
         end
 
-        subgraph air ["[N#nbsp;x]#nbsp;aircraft#nbsp;container(s)#nbsp;(amd64/arm64)"]
+        subgraph air ["[N#nbsp;x]#nbsp;aircraft#nbsp;container(s)#nbsp;(amd64,#nbsp;arm64)"]
             subgraph perception [Perception]
                 yolo_py[/yolo_py/]:::algo
                 kiss_icp[/kiss_icp/]:::algo
@@ -96,7 +98,7 @@ flowchart TB
             yolo_py --> |"/detections"| offboard_control
             offboard_control --> |"/reference"| autopilot_interface
             mission --> |"ros2 action/srv"| autopilot_interface
-            zenoh_air <--> |"/state_sharing_drone_n"| state_sharing
+            zenoh_air <--> |"/state_drone_n"| state_sharing
         end
 
         repo(((aerial#nbsp;autonomy#nbsp;stack)))
@@ -106,8 +108,7 @@ flowchart TB
     gz --> |"gz_gst_bridge <br/> [SIM_SUBNET]"| yolo_py
     gz --> |"/lidar_points <br/> [SIM_SUBNET]"| kiss_icp
     sitl <--> |"UDP <br/> [SIM_SUBNET]"| ap_link
-    sitl <--> |"MAVLink <br/> [SIM_SUBNET]"| qgc 
-    sitl --> |"MAVLink <br/> [SIM_SUBNET]"| ground_system
+    sitl <--> |"MAVLink <br/> [SIM_SUBNET]"| mavproxy 
     zenoh_gnd <-.-> |"TCP <br/> [AIR_SUBNET]"| zenoh_air
 
     classDef bridge fill:#ffebd6,stroke:#f5a623,stroke-width:2px;
@@ -120,7 +121,7 @@ flowchart TB
     class aas,repo blueStyle;
     class air,gnd,sim whiteStyle;
     class perception,control,models,swarm greyStyle;
-    linkStyle 13,14,15,16,17 stroke:teal,stroke-width:3px;
+    linkStyle 14,15,16,17 stroke:teal,stroke-width:3px;
     linkStyle 18 stroke:blue,stroke-width:4px;
 ```
 
