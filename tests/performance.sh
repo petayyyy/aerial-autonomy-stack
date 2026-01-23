@@ -28,7 +28,7 @@ cleanup_docker() {
 suite_start_time=$(date +%s)
 {
     for mode in "${MODES[@]}"; do
-        
+
         # 1. Handle vehicle (quad) counts based on mode
         if [ "$mode" == "speedup" ]; then
             quad_counts="1" # quad_counts="1 2 4 6"
@@ -39,7 +39,7 @@ suite_start_time=$(date +%s)
         for autopilot in "${AUTOPILOTS[@]}"; do
             for quads in $quad_counts; do
                 for scenario in "${SENSOR_SCENARIOS[@]}"; do
-                    
+
                     # 2. Scenarios
                     case $scenario in
                         "both") sensor_flags="--camera --lidar"; desc="both sensors" ;;
@@ -57,14 +57,14 @@ suite_start_time=$(date +%s)
                         attempt=1
                         
                         while [ $attempt -le $MAX_RETRIES ]; do
-                            
+
                             output=$(python3 ../scripts/gym_run.py \
                                 --mode "$mode" \
                                 --autopilot "$autopilot" \
                                 --num_quads "$quads" \
                                 --repetitions 1 \
                                 $sensor_flags 2>&1)
-                            
+
                             exit_code=$?
 
                             if [ $exit_code -eq 0 ]; then
@@ -112,7 +112,7 @@ print(f'{mean:.2f} {std:.2f}')
                     current_time=$(date +%s)
                     elapsed=$(( current_time - suite_start_time ))                    
                     echo "Elapsed Time: ${elapsed}s"
-                    
+
                     # 6. Cooldown between scenarios
                     cleanup_docker
                     sleep 5
