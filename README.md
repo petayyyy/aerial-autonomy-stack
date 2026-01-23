@@ -6,6 +6,23 @@
 2. **Simulate** faster-than-real-time perception and control—with YOLOv8 and 3D LiDAR 
 3. **Deploy** in real drones—with JetPack and NVIDIA Orin
 
+For the motivation behind AAS, read [`RATIONALE.md`](/supplementary/RATIONALE.md)
+<!--
+If you wish, please cite this work as:
+
+```bibtex
+@misc{panerati2026aas,
+      title={TBD}, 
+      author={TBD},
+      year={2026},
+      eprint={2601.TBD},
+      archivePrefix={arXiv},
+      primaryClass={cs.RO},
+      url={https://arxiv.org/abs/2601.TBD}, 
+}
+```
+-->
+
 <details>
 <summary><b>Feature list</b> <i>(click to expand)</i></summary>
 
@@ -39,8 +56,8 @@ flowchart TB
             sitl("[N x] PX4 || <br/> ArduPilot SITL"):::resource
             gz(Gazebo Sim):::resource
             subgraph models [Models]
-                drones(aircraft_models):::resource
-                worlds(simulation_worlds):::resource
+                drones(aircraft_models/):::resource
+                worlds(simulation_worlds/):::resource
             end
 
             drones --> gz
@@ -49,15 +66,17 @@ flowchart TB
         end
 
         subgraph gnd ["#nbsp;ground#nbsp;container#nbsp;(amd64)"]
+            mavproxy{{mavproxy}}:::bridge
             ground_system[/ground_system\]:::algo
             qgc(QGroundControl):::resource
             zenoh_gnd{{zenoh-bridge}}:::bridge
 
-            ground_system ~~~ qgc
-            ground_system --> |"/tracks"| zenoh_gnd  
+            ground_system --> |"/tracks"| zenoh_gnd
+            mavproxy <--> qgc
+            mavproxy --> ground_system
         end
 
-        subgraph air ["[N#nbsp;x]#nbsp;aircraft#nbsp;container(s)#nbsp;(amd64/arm64)"]
+        subgraph air ["[N#nbsp;x]#nbsp;aircraft#nbsp;container(s)#nbsp;(amd64,#nbsp;arm64)"]
             subgraph perception [Perception]
                 yolo_py[/yolo_py/]:::algo
                 kiss_icp[/kiss_icp/]:::algo
@@ -79,7 +98,7 @@ flowchart TB
             yolo_py --> |"/detections"| offboard_control
             offboard_control --> |"/reference"| autopilot_interface
             mission --> |"ros2 action/srv"| autopilot_interface
-            zenoh_air <--> |"/state_sharing_drone_n"| state_sharing
+            zenoh_air <--> |"/state_drone_n"| state_sharing
         end
 
         repo(((aerial#nbsp;autonomy#nbsp;stack)))
@@ -89,8 +108,7 @@ flowchart TB
     gz --> |"gz_gst_bridge <br/> [SIM_SUBNET]"| yolo_py
     gz --> |"/lidar_points <br/> [SIM_SUBNET]"| kiss_icp
     sitl <--> |"UDP <br/> [SIM_SUBNET]"| ap_link
-    sitl <--> |"MAVLink <br/> [SIM_SUBNET]"| qgc 
-    sitl --> |"MAVLink <br/> [SIM_SUBNET]"| ground_system
+    sitl <--> |"MAVLink <br/> [SIM_SUBNET]"| mavproxy 
     zenoh_gnd <-.-> |"TCP <br/> [AIR_SUBNET]"| zenoh_air
 
     classDef bridge fill:#ffebd6,stroke:#f5a623,stroke-width:2px;
@@ -103,7 +121,7 @@ flowchart TB
     class aas,repo blueStyle;
     class air,gnd,sim whiteStyle;
     class perception,control,models,swarm greyStyle;
-    linkStyle 13,14,15,16,17 stroke:teal,stroke-width:3px;
+    linkStyle 14,15,16,17 stroke:teal,stroke-width:3px;
     linkStyle 18 stroke:blue,stroke-width:4px;
 ```
 
@@ -214,7 +232,7 @@ AUTOPILOT=px4 NUM_QUADS=1 NUM_VTOLS=1 WORLD=swiss_town RTF=3.0 ./sim_run.sh     
 In any of the `QUAD` or `VTOL` Xterm terminals:
 ```sh
 # 2. Fly
-ros2 run mission mission --ros-args -r __ns:=/Drone$DRONE_ID -p use_sim_time:=true            # This mission is a defined in /aircraft/aircraft_resources/missions/test_mission.yaml
+ros2 run mission mission --ros-args -r __ns:=/Drone$DRONE_ID -p use_sim_time:=true            # This mission is defined in /aircraft/aircraft_resources/missions/test_mission.yaml
 ```
 
 In the `Simulation`'s Xterm terminal:
@@ -253,7 +271,7 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 > # SetSpeed service (always limited by the autopilot params, for quads applies from the next command, not effective on ArduPilot VTOLs) 
 > ros2 service call /Drone${DRONE_ID}/set_speed autopilot_interface_msgs/srv/SetSpeed '{speed: 3.0}'
 > ```
-To create a new mission, re-implement [`test_mission.yaml`](/aircraft/aircraft_resources/missions/test_mission.yaml)
+> To create a new mission, re-implement [`test_mission.yaml`](/aircraft/aircraft_resources/missions/test_mission.yaml)
 > </details>
 > <details>
 > <summary>Tip 2: use <b>Tmux shortcuts</b> to navigate windows and panes in Xterm <i>(click to expand)</i></summary>
