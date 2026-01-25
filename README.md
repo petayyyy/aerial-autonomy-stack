@@ -12,8 +12,7 @@ For the motivation behind AAS, read [`RATIONALE.md`](/supplementary/RATIONALE.md
       title={{\ttfamily aerial-autonomy-stack}---a faster-than-real-time, autopilot-agnostic, {ROS2} framework to simulate and deploy perception-based drones}, 
       author={Panerati, Jacopo},
       year={2026},
-      url={https://github.com/JacopoPan/aerial-autonomy-stack}, 
-}
+      url={https://github.com/JacopoPan/aerial-autonomy-stack}}
 ```
 
 <details>
