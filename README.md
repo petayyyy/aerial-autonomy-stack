@@ -6,22 +6,14 @@
 2. **Simulate** faster-than-real-time perception and control—with YOLOv8 and 3D LiDAR 
 3. **Deploy** in real drones—with JetPack and NVIDIA Orin
 
-For the motivation behind AAS, read [`RATIONALE.md`](/supplementary/RATIONALE.md)
-<!--
-If you wish, please cite this work as:
-
+Also read its [`RATIONALE.md`](/supplementary/RATIONALE.md) or [ask Perplexity about AAS](https://www.perplexity.ai/search?q=I%20am%20looking%20at%20the%20repo%20https%3A%2F%2Fgithub.com%2FJacopoPan%2Faerial-autonomy-stack.%20Summarize%20what%20this%20code%20does%20and%20how%20it%20can%20help%20me%20and%20my%20projects.); if you wish, please cite this work as:
 ```bibtex
 @misc{panerati2026aas,
-      title={TBD}, 
-      author={TBD},
+      title={{\ttfamily aerial-autonomy-stack}---a faster-than-real-time, autopilot-agnostic, {ROS2} framework to simulate and deploy perception-based drones}, 
+      author={Panerati, Jacopo},
       year={2026},
-      eprint={2601.TBD},
-      archivePrefix={arXiv},
-      primaryClass={cs.RO},
-      url={https://arxiv.org/abs/2601.TBD}, 
-}
+      url={https://github.com/JacopoPan/aerial-autonomy-stack}}
 ```
--->
 
 <details>
 <summary><b>Feature list</b> <i>(click to expand)</i></summary>
