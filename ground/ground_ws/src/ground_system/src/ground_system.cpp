@@ -27,6 +27,8 @@ GroundSystem::GroundSystem() : Node("ground_system"), keep_running_(true)
     // Single listener thread, use base_port_ and pass drone_id = -1 to signal "auto-detect ID from message"
     listener_threads_.emplace_back(&GroundSystem::mavlink_listener, this, -1, base_port_);
     RCLCPP_INFO(this->get_logger(), "Listening to the streams from %d drones on single port %d", num_drones_, base_port_);
+    // To listen to separate UDP streams on separate ports, create multiple threads using:
+    // listener_threads_.emplace_back(&GroundSystem::mavlink_listener, this, drone_id, port);
 }
 
 GroundSystem::~GroundSystem()
