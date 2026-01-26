@@ -28,7 +28,7 @@ windows:
           echo "[UdpEndpoint drone<%= drone_id %>]" >> /aas/ground_resources/comms/mavlink_router_main.conf &&
           echo "Mode = Eavesdropping" >> /aas/ground_resources/comms/mavlink_router_main.conf &&
           echo "Address = 0.0.0.0" >> /aas/ground_resources/comms/mavlink_router_main.conf &&
-          echo "Port = <%= 14540 + sitl_instance %>" >> /aas/ground_resources/comms/mavlink_router_main.conf &&
+          echo "Port = <%= 16540 + sitl_instance %>" >> /aas/ground_resources/comms/mavlink_router_main.conf &&
           <% end %>
           <% else %>
           echo "[UartEndpoint hardware]" >> /aas/ground_resources/comms/mavlink_router_main.conf &&
