@@ -20,24 +20,17 @@ windows:
   - mavproxy:
       layout: tiled
       panes:
-        <% if simulated_time %>
+        - >
+          mavproxy.py
+          <% if simulated_time %>
           <% (1..(num_quads + num_vtols)).each do |drone_id| %>
-          <% 
-            sitl_instance = drone_id - 1
-          %>
-          - >
-            mavproxy.py --master=udp:0.0.0.0:<%= 14540 + sitl_instance %>
-            --out=udp:127.0.0.1:<%= 14550 + sitl_instance %>
-            --out=udp:127.0.0.1:<%= 18540 + sitl_instance %>
-            --daemon --nowait --non-interactive
+          <% sitl_instance = drone_id - 1 %>
+          --master=udp:0.0.0.0:<%= 14540 + sitl_instance %>
           <% end %>
-        <% else %>
-          ->
-            mavproxy.py --master=/dev/ttyUSB0,57600
-            --out=udp:127.0.0.1:14550
-            --out=udp:127.0.0.1:18540
-            --daemon --nowait --non-interactive
-        <% end %>
+          <% else %>
+          --master=/dev/ttyUSB0,57600
+          <% end %>
+          --out=udp:127.0.0.1:14550 --out=udp:127.0.0.1:18540 --daemon --nowait --non-interactive --default-modules="" --streamrate=-1
 
   - zenoh_and_qgc:
       layout: even-horizontal
