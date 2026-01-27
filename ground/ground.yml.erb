@@ -15,7 +15,27 @@ windows:
       layout: even-horizontal
       panes:
         - clear && echo "So nice to have you with us, this is the ground container."
-        - ros2 run ground_system ground_system --ros-args -p num_drones:=<%= num_quads + num_vtols %> -p base_port:=14540 -p rate:=1.0 <%= simulated_time ? ' -p use_sim_time:=True' : '' %>
+        - ros2 run ground_system ground_system --ros-args -p num_drones:=<%= num_quads + num_vtols %> -p base_port:=18540 -p rate:=1.0 <%= simulated_time ? ' -p use_sim_time:=True' : '' %>
+
+  - mavlink-router:
+      layout: tiled
+      panes:
+        - >
+          cp /aas/ground_resources/comms/mavlink_router_base.conf /aas/ground_resources/comms/mavlink_router_main.conf &&
+          <% if simulated_time %>
+          <% (1..(num_quads + num_vtols)).each do |drone_id| %>
+          <% sitl_instance = drone_id - 1 %>
+          echo "[UdpEndpoint drone<%= drone_id %>]" >> /aas/ground_resources/comms/mavlink_router_main.conf &&
+          echo "Mode = Eavesdropping" >> /aas/ground_resources/comms/mavlink_router_main.conf &&
+          echo "Address = 0.0.0.0" >> /aas/ground_resources/comms/mavlink_router_main.conf &&
+          echo "Port = <%= 16540 + sitl_instance %>" >> /aas/ground_resources/comms/mavlink_router_main.conf &&
+          <% end %>
+          <% else %>
+          echo "[UartEndpoint hardware]" >> /aas/ground_resources/comms/mavlink_router_main.conf &&
+          echo "Device = /dev/ttyUSB0" >> /aas/ground_resources/comms/mavlink_router_main.conf &&
+          echo "Baud = 57600" >> /aas/ground_resources/comms/mavlink_router_main.conf &&
+          <% end %>
+          mavlink-routerd -c /aas/ground_resources/comms/mavlink_router_main.conf
 
   - zenoh_and_qgc:
       layout: even-horizontal

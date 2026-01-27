@@ -58,14 +58,14 @@ flowchart TB
         end
 
         subgraph gnd ["#nbsp;ground#nbsp;container#nbsp;(amd64)"]
-            mavproxy{{mavproxy}}:::bridge
+            mlrouter{{mavlink-router}}:::bridge
             ground_system[/ground_system\]:::algo
             qgc(QGroundControl):::resource
             zenoh_gnd{{zenoh-bridge}}:::bridge
 
             ground_system --> |"/tracks"| zenoh_gnd
-            mavproxy <--> qgc
-            mavproxy --> ground_system
+            mlrouter <--> qgc
+            mlrouter --> ground_system
         end
 
         subgraph air ["[N#nbsp;x]#nbsp;aircraft#nbsp;container(s)#nbsp;(amd64,#nbsp;arm64)"]
@@ -100,7 +100,7 @@ flowchart TB
     gz --> |"gz_gst_bridge <br/> [SIM_SUBNET]"| yolo_py
     gz --> |"/lidar_points <br/> [SIM_SUBNET]"| kiss_icp
     sitl <--> |"UDP <br/> [SIM_SUBNET]"| ap_link
-    sitl <--> |"MAVLink <br/> [SIM_SUBNET]"| mavproxy 
+    sitl <--> |"MAVLink <br/> [SIM_SUBNET]"| mlrouter 
     zenoh_gnd <-.-> |"TCP <br/> [AIR_SUBNET]"| zenoh_air
 
     classDef bridge fill:#ffebd6,stroke:#f5a623,stroke-width:2px;
@@ -483,6 +483,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information. Copyr
 
 - ArduPilot SITL for Iris uses option -f that also sets "external": True, this is not the case for the Alti Transition from ArduPilot/SITL_Models
 - QGC is started with a virtual joystick (with low throttle if using only VTOLs and centered throttle if there are quads), this is reflective of real-life but note that this counts as "RC loss" when switching focus from one autopilot instance to another
+- QGC will only connect to the first 10 ArduPilot vehicles when GND_CONTAINER=false because of settings in QGroundControl.ini
 - On non-configured real-life AP, missing topics: ros2 topic echo /mavros/local_position/odom ros2 topic echo /mavros/home_position/home
 - Gazebo WindEffects plugin is disabled/not working for PX4 standard_vtol
 - Command 178 MAV_CMD_DO_CHANGE_SPEED is accepted but not effective in changing speed for ArduPilot VTOL

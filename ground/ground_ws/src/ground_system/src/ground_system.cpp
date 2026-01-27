@@ -5,7 +5,7 @@ GroundSystem::GroundSystem() : Node("ground_system"), keep_running_(true)
     // Declare Parameters
     this->declare_parameter("num_drones", 1);
     this->declare_parameter("ip", "0.0.0.0");
-    this->declare_parameter("base_port", 14540);
+    this->declare_parameter("base_port", 18540);
     this->declare_parameter("rate", 10.0);
 
     // Get Parameters
@@ -24,13 +24,11 @@ GroundSystem::GroundSystem() : Node("ground_system"), keep_running_(true)
     auto timer_period = std::chrono::duration<double>(1.0 / publish_rate_);
     timer_ = this->create_wall_timer(timer_period, std::bind(&GroundSystem::publish_swarm_obs, this));
 
-    // Start Listener Threads
-    for (int i = 0; i < num_drones_; ++i) {
-        int drone_id = i + 1;
-        int port = base_port_ + i;
-        listener_threads_.emplace_back(&GroundSystem::mavlink_listener, this, drone_id, port);
-        RCLCPP_INFO(this->get_logger(), "Listening for drone %d on port %d", drone_id, port);
-    }
+    // Single listener thread, use base_port_ and pass drone_id = -1 to signal "auto-detect ID from message"
+    listener_threads_.emplace_back(&GroundSystem::mavlink_listener, this, -1, base_port_);
+    RCLCPP_INFO(this->get_logger(), "Listening to the streams from %d drones on single port %d", num_drones_, base_port_);
+    // To listen to separate UDP streams on separate ports, create multiple threads using:
+    // listener_threads_.emplace_back(&GroundSystem::mavlink_listener, this, drone_id, port);
 }
 
 GroundSystem::~GroundSystem()
@@ -82,6 +80,15 @@ void GroundSystem::mavlink_listener(int drone_id, int port)
             // Parse bytes
             for (ssize_t i = 0; i < len; ++i) {
                 if (mavlink_parse_char(MAVLINK_COMM_0, buffer[i], &msg, &status)) {
+
+                    // In single-port/single-thread mode (drone_id == -1), detect ID from the message
+                    int current_id = drone_id;
+                    if (current_id == -1) {
+                        current_id = msg.sysid;
+                        if (current_id < 1 || current_id > num_drones_) {
+                            continue; // Ignore out-of-bounds IDs
+                        }
+                    }
                     
                     if (msg.msgid == MAVLINK_MSG_ID_GLOBAL_POSITION_INT) { // Handle GLOBAL_POSITION_INT message
                         mavlink_global_position_int_t pos;
@@ -95,7 +102,7 @@ void GroundSystem::mavlink_listener(int drone_id, int port)
                         obs.vz = pos.vz / 100.0;
                         {
                             std::lock_guard<std::mutex> lock(data_mutex_);
-                            drone_obs_[drone_id] = obs;
+                            drone_obs_[current_id] = obs;
                         }
                     }
                 }

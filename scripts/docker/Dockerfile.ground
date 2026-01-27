@@ -88,15 +88,28 @@ RUN apt update \
     && apt clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Add pymavlink to emulate the ground system using telemetry data
+# Add pymavlink and mavproxy to quickly inspect MAVLink streams
 RUN pip3 install --no-cache-dir --upgrade pip \
-    && pip3 install --no-cache-dir --resume-retries 5 pymavlink pyserial
+    && pip3 install --no-cache-dir --resume-retries 5 pymavlink pyserial mavproxy future
 # Check with $ python3 -c "import pymavlink; print(pymavlink.__version__)"
 
 ################################################################################
 # Stage 4 - 8+GB ###############################################################
 ################################################################################
 FROM ros2-qgc-zenoh-gst-pymavlink-image AS ground-dev-image
+
+# Install mavlink-router
+RUN apt update \
+    && apt install -y --no-install-recommends \
+        git meson ninja-build pkg-config gcc g++ systemd \
+    && apt clean \
+    && rm -rf /var/lib/apt/lists/*
+COPY /github_clones/mavlink-router /aas/github_apps/mavlink-router
+WORKDIR /aas/github_apps/mavlink-router
+RUN meson setup build . --buildtype=release \
+    && ninja -C build \
+    && ninja -C build install
+# Check with $ mavlink-routerd --version
 
 # Install wmctrl and xrandr to resize QGC window
 RUN apt update \
