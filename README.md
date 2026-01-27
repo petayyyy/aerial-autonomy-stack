@@ -58,14 +58,14 @@ flowchart TB
         end
 
         subgraph gnd ["#nbsp;ground#nbsp;container#nbsp;(amd64)"]
-            mavproxy{{mavproxy}}:::bridge
+            mlrouter{{mavlink-router}}:::bridge
             ground_system[/ground_system\]:::algo
             qgc(QGroundControl):::resource
             zenoh_gnd{{zenoh-bridge}}:::bridge
 
             ground_system --> |"/tracks"| zenoh_gnd
-            mavproxy <--> qgc
-            mavproxy --> ground_system
+            mlrouter <--> qgc
+            mlrouter --> ground_system
         end
 
         subgraph air ["[N#nbsp;x]#nbsp;aircraft#nbsp;container(s)#nbsp;(amd64,#nbsp;arm64)"]
@@ -100,7 +100,7 @@ flowchart TB
     gz --> |"gz_gst_bridge <br/> [SIM_SUBNET]"| yolo_py
     gz --> |"/lidar_points <br/> [SIM_SUBNET]"| kiss_icp
     sitl <--> |"UDP <br/> [SIM_SUBNET]"| ap_link
-    sitl <--> |"MAVLink <br/> [SIM_SUBNET]"| mavproxy 
+    sitl <--> |"MAVLink <br/> [SIM_SUBNET]"| mlrouter 
     zenoh_gnd <-.-> |"TCP <br/> [AIR_SUBNET]"| zenoh_air
 
     classDef bridge fill:#ffebd6,stroke:#f5a623,stroke-width:2px;
