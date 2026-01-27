@@ -162,6 +162,13 @@ ENV PYTHONPATH=/aas/github_apps/onnxruntime/build/Linux/Release
 # Check with $ python3 -c "import onnxruntime as ort; print(ort.__version__); print(ort.get_available_providers())"
 
 # Also install the Livox ROS2 driver only on Orin for deployment
+COPY /github_clones/Livox-SDK2 /aas/github_apps/Livox-SDK2
+WORKDIR /aas/github_apps/Livox-SDK2
+RUN mkdir build && cd build && \
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local && \
+    make -j$(nproc) && \
+    make install && \
+    ldconfig
 COPY /github_clones/livox_ros_driver2 /aas/github_ws/src/livox_ros_driver2
 WORKDIR /aas/github_ws/
 # Based on https://github.com/Livox-SDK/livox_ros_driver2/blob/master/README.md
