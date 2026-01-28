@@ -351,15 +351,17 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 
 ## Gymnasium Environment
 
-Using a Python `venv` or a [`conda`](https://docs.conda.io/projects/conda/en/stable/user-guide/install/linux.html) environment is optional but recommended:
+<details>
+<summary>Using a Python <kbd>venv</kbd> or a <a href="https://docs.conda.io/projects/conda/en/stable/user-guide/install/linux.html"><kbd>conda</kbd></a> environment is optional but recommended <i>(click to expand)</i></summary>
+
 ```sh
 wget https://repo.anaconda.com/archive/Anaconda3-2025.06-0-Linux-x86_64.sh # Or a newer version in https://repo.anaconda.com/archive/
 bash Anaconda3-2025.06-0-Linux-x86_64.sh
 conda create -n aas python=3.13
-conda activate aas
 ```
+</details>
 
-Install the `aas-gym` package (after completing the steps in ["Installation"](#installation)):
+Install the `aas-gym` package (**after** completing the steps in ["Installation"](#installation)):
 ```sh
 conda activate aas                                    # If using Anaconda
 cd aerial-autonomy-stack/aas-gym/
