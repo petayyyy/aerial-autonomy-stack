@@ -16,7 +16,6 @@ from action_msgs.msg import GoalStatus
 from sensor_msgs.msg import NavSatFix
 from mavros_msgs.msg import VfrHud
 from vision_msgs.msg import Detection2DArray
-from px4_msgs.msg import VehicleGlobalPosition, AirspeedValidated
 
 from ground_system_msgs.msg import SwarmObs
 from state_sharing.msg import SharedState
@@ -79,13 +78,6 @@ class MissionNode(Node):
             reliability=ReliabilityPolicy.BEST_EFFORT,
             depth=10
         )
-        # PX4 subscribers
-        self.create_subscription( # 100Hz
-            VehicleGlobalPosition, 'fmu/out/vehicle_global_position', self.px4_global_position_callback,
-            self.qos_profile, callback_group=self.subscriber_callback_group)
-        self.create_subscription( # 10Hz
-            AirspeedValidated, '/fmu/out/airspeed_validated', self.airspeed_validated_callback,
-            self.qos_profile, callback_group=self.subscriber_callback_group)
         # MAVROS subscribers
         self.create_subscription( # 4Hz
             NavSatFix, '/mavros/global_position/global', self.mavros_global_position_callback,
@@ -143,16 +135,6 @@ class MissionNode(Node):
             self._speed_client = None
             self._reposition_client = None
             self.get_logger().info("DRONE_ID not set, service clients not created.")
-
-    def px4_global_position_callback(self, msg): # Mutally exclusive with mavros_global_position_callback
-        with self.data_lock:
-            self.lat = msg.lat
-            self.lon = msg.lon
-            self.alt_msl = msg.alt
-
-    def airspeed_validated_callback(self, msg): # Mutally exclusive with vfr_hud_callback
-        with self.data_lock:
-            self.airspeed = msg.true_airspeed_m_s
 
     def mavros_global_position_callback(self, msg):  # Mutally exclusive with px4_global_position_callback
         with self.data_lock:

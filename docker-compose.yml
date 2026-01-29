@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  sitl-gazebo:
+    build:
+      context: .
+      dockerfile: scripts/docker/Dockerfile.simulation
+    container_name: ardupilot-sitl
+    networks:
+      sim_net:
+        ipv4_address: 10.45.0.100
+    environment:
+      - DISPLAY=${DISPLAY}  # Передаем DISPLAY из хоста
+      - XAUTHORITY=${XAUTHORITY:-/tmp/.docker.xauth}
+      - WORLD=impalpable_greyness
+      - DRONE_TYPE=quadplane
+    volumes:
+      - ./simulation/simulation_resources:/aas/simulation_resources
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw  # X11 socket
+      - ${XAUTHORITY:-/tmp/.docker.xauth}:/tmp/.docker.xauth:rw
+    stdin_open: true
+    tty: true
+    command: ["bash", "-c", "sleep infinity"]  # Оставляем контейнер живым
+
+networks:
+  sim_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.45.0.0/16

@@ -351,17 +351,15 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 
 ## Gymnasium Environment
 
-<details>
-<summary>Using a Python <kbd>venv</kbd> or a <a href="https://docs.conda.io/projects/conda/en/stable/user-guide/install/linux.html"><kbd>conda</kbd></a> environment is optional but recommended <i>(click to expand)</i></summary>
-
+Using a Python `venv` or a [`conda`](https://docs.conda.io/projects/conda/en/stable/user-guide/install/linux.html) environment is optional but recommended:
 ```sh
 wget https://repo.anaconda.com/archive/Anaconda3-2025.06-0-Linux-x86_64.sh # Or a newer version in https://repo.anaconda.com/archive/
 bash Anaconda3-2025.06-0-Linux-x86_64.sh
 conda create -n aas python=3.13
+conda activate aas
 ```
-</details>
 
-Install the `aas-gym` package (**after** completing the steps in ["Installation"](#installation)):
+Install the `aas-gym` package (after completing the steps in ["Installation"](#installation)):
 ```sh
 conda activate aas                                    # If using Anaconda
 cd aerial-autonomy-stack/aas-gym/
@@ -496,6 +494,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information. Copyr
 ## TODOs
 
 LiDAR-inertial Odometry and SLAM
+- LiDAR driver https://github.com/Livox-SDK/livox_ros_driver2 in aircraft-image (the LiDAR should publish on topic `/lidar_points` for KISS-ICP)
 - Integrate [SPARK-FAST-LIO](https://github.com/MIT-SPARK/spark-fast-lio) or [SuperOdom](https://github.com/superxslam/SuperOdom) as additional baselines
 - Create a 3D world.sdf for LIO-based navigation and mapping
 - Create a 3D world.sdf WITHOUT GPS PLUGIN (and configure PX4/ArduPilot accordingly) for LIO-based navigation and mapping

@@ -8,7 +8,7 @@ fi
 
 # Configuration
 MODES=("speedup") # MODES=("speedup" "vectorenv-speedup")
-AUTOPILOTS=("px4") # AUTOPILOTS=("px4" "ardupilot")
+AUTOPILOTS=("ardupilot") # AUTOPILOTS=("px4" "ardupilot")
 SENSOR_SCENARIOS=("both") # SENSOR_SCENARIOS=("both" "no_camera" "no_lidar" "none")
 REPETITIONS=2
 MAX_RETRIES=3

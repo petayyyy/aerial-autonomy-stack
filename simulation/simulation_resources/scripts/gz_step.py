@@ -15,7 +15,7 @@ def main():
     args = parser.parse_args()
     
     world_name = os.environ.get('WORLD', 'default')
-    autopilot = os.environ.get('AUTOPILOT', 'px4')
+    autopilot = os.environ.get('AUTOPILOT', 'ardupilot')
 
     gz_node = gz.transport13.Node()
     

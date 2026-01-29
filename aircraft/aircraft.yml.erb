@@ -78,13 +78,6 @@ windows:
           erb /aas/aircraft_resources/comms/zenoh_config_air.json5.erb > /aas/aircraft_resources/comms/zenoh_config_air.json5 &&
           zenoh-bridge-ros2dds -e tcp/<%= gnd_container ? "#{air_subnet}.90.#{ground_id}" : "#{sim_subnet}.90.#{sim_id}" %>:7447 -c /aas/aircraft_resources/comms/zenoh_config_air.json5
 
-  <% if lidar && !simulated_time %>
-  - livox_driver:
-      layout: tiled
-      panes:
-        - ros2 launch livox_ros_driver2 msg_MID360.launch
-  <% end %>
-
   <% if record_rosbag %>
   - logging:
       layout: tiled

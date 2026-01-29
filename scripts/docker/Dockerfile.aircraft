@@ -161,23 +161,6 @@ RUN apt update && \
 ENV PYTHONPATH=/aas/github_apps/onnxruntime/build/Linux/Release
 # Check with $ python3 -c "import onnxruntime as ort; print(ort.__version__); print(ort.get_available_providers())"
 
-# Also install the Livox ROS2 driver only on Orin for deployment
-COPY /github_clones/Livox-SDK2 /aas/github_apps/Livox-SDK2
-WORKDIR /aas/github_apps/Livox-SDK2
-RUN mkdir build && cd build && \
-    cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_POLICY_VERSION_MINIMUM=3.5 && \
-    make -j$(nproc) && \
-    make install && \
-    ldconfig
-COPY /github_clones/livox_ros_driver2 /aas/github_ws/src/livox_ros_driver2
-WORKDIR /aas/github_ws/
-# Based on https://github.com/Livox-SDK/livox_ros_driver2/blob/master/README.md
-# https://github.com/Livox-SDK/livox_ros_driver2/blob/master/build.sh
-RUN cp -f src/livox_ros_driver2/package_ROS2.xml src/livox_ros_driver2/package.xml \
-    && cp -rf src/livox_ros_driver2/launch_ROS2 src/livox_ros_driver2/launch
-# Explicitly use bash, not sh, to source and build the workspace
-RUN bash -c "source /opt/ros/humble/setup.bash  colcon build --symlink-install --packages-select livox_ros_driver2 --cmake-args -DROS_EDITION=ROS2 -DHUMBLE_ROS=humble -DCMAKE_BUILD_TYPE=Release"
-
 ################################################################################
 # Stage 6 - 16GB ###############################################################
 ################################################################################
@@ -188,7 +171,7 @@ RUN pip3 install --no-cache-dir --upgrade "cmake>=3.24"
 COPY /github_clones/kiss-icp /aas/github_ws/src/kiss-icp
 WORKDIR /aas/github_ws
 # Explicitly use bash, not sh, to source and build the workspace
-RUN bash -c "source /opt/ros/humble/setup.bash && colcon build --symlink-install --packages-skip livox_ros_driver2 --cmake-args -DCMAKE_BUILD_TYPE=Release"
+RUN bash -c "source /opt/ros/humble/setup.bash && colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release"
 
 # Add pymavlink for debugging and testing
 RUN pip3 install --no-cache-dir --upgrade pip \

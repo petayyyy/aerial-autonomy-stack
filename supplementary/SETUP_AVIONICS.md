@@ -156,7 +156,7 @@ docker run -it --rm --entrypoint bash -v ~/Downloads:/temp simulation-image -c \
 
 To flash the newly created `.px4` or `.apj` file to your autopilot board, follow [QGC's User Guide](https://docs.qgroundcontrol.com/Stable_V5.0/en/qgc-user-guide/setup_view/firmware.html) 
 
-## PX4: Configure 6X's Network and DDS Client
+## PX4: Configure 6x's Network and DDS Client
 
 On the Jetson Baseboard's Orin NX, under "Settings" -> "Network", configure the "PCI Ethernet" connection to "Manual" with IPv4 with address 10.10.1.44 and netmask 255.255.255.0
 

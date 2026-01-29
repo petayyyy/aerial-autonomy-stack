@@ -3,10 +3,9 @@
   <world name="impalpable_greyness">
 
     <!-- Gazebo/PX4 pyhsics, it is overridden when using Ardupilot -->
-    <physics type="ode">
-      <max_step_size>0.004</max_step_size>
+    <physics name="2ms" type="ignore">
+      <max_step_size>0.002</max_step_size>
       <real_time_factor>1</real_time_factor>
-      <real_time_update_rate>250</real_time_update_rate>
     </physics>
     <plugin name="gz::sim::systems::Physics" filename="gz-sim-physics-system">
       <engine>
@@ -566,5 +565,5 @@
         
     </model>
 
-  </world>
+      <include>\n      <uri>model://iris_with_ardupilot_1</uri>\n      <pose degrees="true">0 -1 0.75 0 0 0</pose>\n    </include>\n</world>
 </sdf>
