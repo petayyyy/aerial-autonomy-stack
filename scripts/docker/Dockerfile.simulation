@@ -26,7 +26,6 @@ RUN sed -i 's|archive.ubuntu.com|mirror.yandex.ru|g; s|security.ubuntu.com|mirro
 ENV PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
 ENV PIP_TRUSTED_HOST=mirrors.aliyun.com
 
-USER arduuser
 ENV USER=arduuser
 
 ENV USER=arduuser \
@@ -35,9 +34,8 @@ ENV USER=arduuser \
     SKIP_AP_EXT_ENV=1 \  
     DO_AP_STM_ENV=0
 
-RUN bash ./Tools/environment_install/install-prereqs-ubuntu.sh -y
-RUN ./waf configure --board sitl && ./waf build
-USER root
+RUN USER=arduuser gosu arduuser bash ./Tools/environment_install/install-prereqs-ubuntu.sh -y
+RUN gosu arduuser bash -c "cd /aas/github_apps/ardupilot && ./waf configure --board sitl && ./waf build"
 RUN chown -R root:root /aas/github_apps/ardupilot
 
 # ArduPilot Gazebo Plugin
@@ -92,7 +90,6 @@ RUN mkdir build && cd build && \
 
 ### QGroundControl
 # Устанавливаем зависимости для QGroundControl
-# USER root
 WORKDIR /home/arduuser
 
 RUN apt-get update && apt-get install -y \
@@ -106,7 +103,6 @@ RUN apt-get update && apt-get install -y \
     libgl1-mesa-glx \
     libgl1-mesa-dri \
     && rm -rf /var/lib/apt/lists/*
-USER arduuser
 
 # Скачиваем и извлекаем QGroundControl
 RUN wget https://d176tv9ibo4jno.cloudfront.net/latest/QGroundControl-x86_64.AppImage -O /home/arduuser/QGroundControl.AppImage && \
